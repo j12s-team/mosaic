@@ -1,0 +1,177 @@
+# Mosaic — your personal crypto hedge fund, run by an agent
+
+> **SoSoValue Buildathon** · Wave 1 submission · Build phase: May 1 – May 12, 2026
+>
+> An agentic on-chain index manager: describe a thesis in plain English, Mosaic constructs
+> a thematic portfolio from SoSoValue data, executes it through the SoDEX orderbook, and
+> proposes rebalances when the underlying signals shift — with the user in the confirm loop.
+
+---
+
+## TL;DR
+
+| | |
+|---|---|
+| **What it does** | Turns a one-sentence investment thesis into a live, on-chain, risk-aware index that the agent maintains for you. |
+| **Why now** | SoSoValue exposes the data needed to *price* a thesis (news, ETF flows, SSI composition, momentum). SoDEX's orderbook lets you *execute* one without AMM leakage. Together they make a one-person hedge fund possible. |
+| **Who it's for** | Crypto-native retail traders who want structured exposure but don't have the time, tooling, or quant skill to run a portfolio themselves. |
+| **What's unique** | Not another signal bot. Mosaic produces *baskets*, not picks — anchored to SoSoValue's SSI design philosophy, with concentration caps, IOC-only execution, and human confirmation on every irreversible move. |
+
+---
+
+## Live demo
+
+| | |
+|---|---|
+| Marketing site | `/` |
+| Interactive prototype | `/app` |
+| API: build basket from thesis | `POST /api/thesis` |
+| API: route execution plan | `POST /api/execute` |
+| API: portfolio + pending rebalances | `GET /api/portfolio` |
+
+The prototype runs end-to-end with deterministic mocks so the demo never falls over.
+Plug in keys to flip into live SoSoValue + SoDEX-testnet mode.
+
+---
+
+## The four-stage agentic loop
+
+```
+┌──────────┐   ┌──────────┐   ┌──────────┐   ┌─────────────┐
+│ Observe  │──▶│  Reason  │──▶│ Propose  │──▶│ Confirm &   │
+│ SoSoVal. │   │  scoring │   │ +citations│   │ execute via │
+│ news/    │   │  kernel  │   │           │   │ SoDEX       │
+│ flows/   │   │          │   │           │   │ (IOC limit) │
+│ SSI/     │   │          │   │           │   │             │
+│ metrics  │   │          │   │           │   │             │
+└──────────┘   └──────────┘   └──────────┘   └─────────────┘
+       ▲                                            │
+       └────────────────────────────────────────────┘
+                  (drift triggers next pass)
+```
+
+Every loop pass that touches user funds is gated by an explicit confirm.
+
+---
+
+## Architecture
+
+```
+mosaic/
+├── app/
+│   ├── page.tsx                  Landing page (server-rendered with live SoSoValue data)
+│   ├── app/page.tsx              Interactive dashboard (thesis → basket → execute → portfolio)
+│   └── api/
+│       ├── thesis/route.ts       POST: build basket + execution plan
+│       ├── execute/route.ts      POST: place orders on SoDEX (explicit confirm flag required)
+│       └── portfolio/route.ts    GET: portfolio + pending rebalance proposals
+├── lib/
+│   ├── sosovalue.ts              Typed SoSoValue API client (news, flows, SSI, metrics)
+│   ├── sodex.ts                  Typed SoDEX client + execution-plan builder + estimateFill
+│   ├── agent.ts                  Thesis classifier + risk-aware scoring + softmax weights
+│   ├── mock.ts                   Deterministic in-memory data so the demo never breaks
+│   ├── types.ts                  Shared domain types
+│   └── utils.ts
+├── components/
+│   ├── landing/                  Hero / Problem / HowItWorks / LiveData / AgenticLoop / WhyMosaic / CTA / Footer / Navbar
+│   ├── dashboard/                ThesisInput / BasketProposal / ExecutionPreview / Portfolio / AgentLog
+│   └── ui/                       button / card / badge / input / progress
+└── tailwind.config.ts            Custom dark-glass theme
+```
+
+### Data sources, end to end
+
+| Surface | SoSoValue endpoint | Used in |
+|---|---|---|
+| Featured news (currency-filtered) | `GET /api/v1/news/featured/currency` | Landing live feed, rebalance citations, sentiment input |
+| ETF spot flows | `GET /api/v1/etf/spot/{asset}/flow` | Landing flow chart, rebalance citations |
+| SSI list / composition | `GET /api/v1/index/{symbol}` | Benchmark mapping, MAG7.ssi card on landing |
+| Token metrics | `GET /api/v1/token/{symbol}/metrics` | Universe scoring (momentum, sentiment, vol, liquidity) |
+
+| Surface | SoDEX endpoint | Used in |
+|---|---|---|
+| List markets | `GET /v1/public/markets` | Routing layer for any SoSoValue ticker into a SoDEX pair |
+| Orderbook depth (8 levels) | `GET /v1/public/depth?symbol=…` | `estimateFill` for slippage-bps preview |
+| Place IOC limit order | `POST /v1/orders` | Execution (HMAC-SHA256-signed) |
+| Account positions | `GET /v1/account/positions` | Portfolio panel |
+
+---
+
+## Quickstart
+
+```bash
+# 1. install
+cd mosaic
+npm install
+
+# 2. configure
+cp .env.local.example .env.local
+# fill in SOSOVALUE_API_KEY, SODEX_API_KEY, SODEX_API_SECRET
+# (or leave blank to run on the deterministic mock layer)
+
+# 3. dev
+npm run dev          # http://localhost:3000
+
+# 4. typecheck + production build
+npm run typecheck
+npm run build
+
+# Smoke-test the agent + API-client logic in isolation:
+npm run typecheck:libs   # checks only lib/*.ts, no Next/React deps required
+```
+
+### Environment
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `SOSOVALUE_API_KEY` | optional | Live SoSoValue API. Falls back to mocks if missing. |
+| `SODEX_API_KEY` / `SODEX_API_SECRET` | optional | SoDEX auth — testnet by default. |
+| `SODEX_BASE_URL` | optional | Defaults to `https://api-testnet.sodex.com`. |
+| `ANTHROPIC_API_KEY` | optional | Use Claude Haiku for thesis interpretation. Falls back to keyword classifier. |
+| `MOSAIC_USE_MOCKS` | optional | Force mock layer (`true`/`false`). |
+
+---
+
+## Mapped to the judging rubric
+
+| Criterion | Weight | How Mosaic addresses it |
+|---|---|---|
+| **User Value & Practical Impact** | 30% | Solves the workflow retail can't do alone: building, executing, and maintaining a thematic crypto portfolio. Plain-English in, on-chain index out. |
+| **Functionality & Working Demo** | 25% | End-to-end live: thesis form → agent log → basket card with weights and rationale → SoDEX execution preview with slippage-bps → portfolio panel with rebalance proposals. |
+| **Logic, Workflow & Product Design** | 20% | Four-stage agentic loop with citations on every proposal. Risk-aware scoring kernel, concentration caps, IOC-only orders, explicit confirm gates. |
+| **Data / API Integration** | 15% | 5 SoSoValue surfaces (news, ETF flow, SSI list, SSI composition, token metrics) + 4 SoDEX endpoints (markets, depth, place order, positions). Typed clients with mock fallback. |
+| **UX & Clarity** | 10% | Single-screen dashboard, dark-glass aesthetic, agent log streams reasoning, every irreversible action carries a review step. |
+
+---
+
+## What makes this submission different
+
+Most agentic-trading hackathon entries are *signal bots* — they say "buy X". Mosaic is a
+*portfolio architect*. It treats SoSoValue's SSI protocol as a design pattern: take a
+thesis, decompose into themes, score and weight a basket with risk caps, and route as
+*one execution plan* through SoDEX's orderbook. That positioning is what unlocks all five
+rubric criteria simultaneously, and it leans directly on the differentiated parts of
+SoSoValue (indices, news, flows) and SoDEX (orderbook depth, IOC routing) rather than
+treating them as generic price oracles.
+
+---
+
+## Roadmap (Wave 2 → Wave 3)
+
+- **Wave 2** — Live SoDEX testnet trading, persisted user baskets via WalletConnect, real ETF-flow regression for stronger triggers, basket back-testing.
+- **Wave 3** — Mainnet SoDEX execution behind delegated permissions, multi-basket dashboards, agent that publishes its own SSI-style index for follow trading.
+- **Demo Day** — Live thesis → on-chain rebalance against testnet, end-to-end, in under 60 seconds.
+
+---
+
+## Submission package
+
+- **Repo** — https://github.com/janneh2000/mosaic
+- **Live demo** — link in submission.
+- **Video** — see `DEMO_SCRIPT.md`.
+- **Team** — solo build (one-person business empire) by Rivaldo.
+- **Wave changelog** — see top of repo.
+
+## License
+
+MIT — see `LICENSE`. Built by [Rivaldo](https://github.com/janneh2000) for the SoSoValue Buildathon Wave 1.

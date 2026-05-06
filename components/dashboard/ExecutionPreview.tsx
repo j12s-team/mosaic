@@ -1,0 +1,149 @@
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatUSD } from "@/lib/utils";
+import type { ExecutionPlan } from "@/lib/types";
+import { CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
+
+interface Props {
+  plan: ExecutionPlan;
+}
+
+export function ExecutionPreview({ plan }: Props) {
+  const [stage, setStage] = useState<"review" | "confirm" | "executing" | "done">("review");
+
+  async function onExecute() {
+    setStage("executing");
+    const res = await fetch("/api/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        basketId: plan.basketId,
+        confirm: true,
+        legs: plan.legs.map((l) => ({
+          market: l.market,
+          side: l.side,
+          notionalUsd: l.notionalUsd,
+          maxSlippageBps: 50,
+        })),
+      }),
+    });
+    if (!res.ok) {
+      setStage("review");
+      return;
+    }
+    setStage("done");
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-brand-300" />
+            SoDEX execution plan
+          </CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Multi-leg, IOC limits, slippage capped at 50bps per leg.
+          </p>
+        </div>
+        <Badge variant="brand">{plan.venue}</Badge>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border border-white/5 bg-background/40 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Estimated total slippage (size-weighted)
+          </div>
+          <div className="mt-1 font-mono text-2xl font-semibold">
+            {plan.estTotalSlippageBps} bps
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-white/5">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Market</th>
+                <th className="px-3 py-2">Side</th>
+                <th className="px-3 py-2 text-right">Notional</th>
+                <th className="px-3 py-2 text-right">Est. price</th>
+                <th className="px-3 py-2 text-right">Slip</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {plan.legs.map((leg) => (
+                <tr key={leg.market}>
+                  <td className="px-3 py-2 font-medium">{leg.market}</td>
+                  <td className="px-3 py-2 capitalize">
+                    <Badge
+                      variant={leg.side === "buy" ? "success" : "danger"}
+                      className="text-[10px]"
+                    >
+                      {leg.side}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">
+                    {formatUSD(leg.notionalUsd)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">
+                    {leg.estPrice.toFixed(4)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">
+                    {leg.estSlippageBps} bps
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {stage === "review" && (
+          <Button className="w-full" onClick={() => setStage("confirm")}>
+            Review &amp; confirm <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
+
+        {stage === "confirm" && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300" />
+              <div className="space-y-2 text-sm">
+                <p className="font-medium">
+                  This will place {plan.legs.length} live orders on SoDEX (
+                  {process.env.NEXT_PUBLIC_NETWORK ?? "testnet"}).
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Total notional <span className="font-mono">{formatUSD(plan.totalNotionalUsd)}</span>{" "}
+                  · max slippage 50bps per leg · IOC limits, no market orders.
+                </p>
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={onExecute}>Confirm &amp; execute</Button>
+                  <Button variant="secondary" onClick={() => setStage("review")}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {stage === "executing" && (
+          <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 p-4 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-300" />
+            Routing {plan.legs.length} legs through SoDEX…
+          </div>
+        )}
+
+        {stage === "done" && (
+          <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+            Basket executed. View it in the portfolio panel below.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

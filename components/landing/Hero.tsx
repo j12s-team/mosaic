@@ -1,0 +1,66 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Sparkles } from "lucide-react";
+
+export function Hero() {
+  return (
+    <section className="relative overflow-hidden">
+      <div className="grid-bg pointer-events-none absolute inset-0 opacity-50" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-brand-500/20 via-brand-500/5 to-transparent blur-3xl" />
+
+      <div className="relative mx-auto flex max-w-7xl flex-col items-center px-6 pt-28 pb-20 text-center">
+        <Badge variant="brand" className="mb-6 backdrop-blur">
+          <Sparkles className="h-3 w-3" />
+          <span className="font-mono text-[11px]">SoSoValue × SoDEX × Agentic AI</span>
+        </Badge>
+
+        <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
+          Your personal crypto{" "}
+          <span className="text-gradient-brand">hedge fund</span>,
+          <br className="hidden sm:block" />
+          run by an agent.
+        </h1>
+
+        <p className="mt-6 max-w-2xl text-balance text-lg text-muted-foreground md:text-xl">
+          Describe a thesis in plain English. Mosaic uses SoSoValue&apos;s index, news and flow data
+          to build a thematic on-chain portfolio, executes it through SoDEX&apos;s orderbook, and
+          proposes rebalances when the data shifts — with you in the confirm loop.
+        </p>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/app">
+            <Button size="lg" className="group">
+              Launch the agent
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Button>
+          </Link>
+          <Link href="/#how">
+            <Button size="lg" variant="secondary">
+              See how it works
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mt-16 grid w-full max-w-4xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
+          {[
+            { k: "Data sources", v: "SoSoValue news, flows, SSI, metrics" },
+            { k: "Execution", v: "SoDEX orderbook (testnet + main)" },
+            { k: "Agent loop", v: "Detect → Propose → Confirm" },
+            { k: "Built for", v: "Wave 1 — May 12, 2026" },
+          ].map((s) => (
+            <div
+              key={s.k}
+              className="rounded-xl border border-white/5 bg-card/40 px-4 py-3 backdrop-blur-xl"
+            >
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {s.k}
+              </div>
+              <div className="mt-1 text-sm font-medium leading-snug">{s.v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
