@@ -17,7 +17,7 @@ export async function LiveData() {
   return (
     <section id="data" className="relative mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand-300">
+        <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
           Powered by real data
         </p>
         <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
@@ -34,7 +34,7 @@ export async function LiveData() {
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Newspaper className="h-4 w-4 text-brand-300" />
+                <Newspaper className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                 Featured news feed
               </CardTitle>
               <CardDescription className="text-xs">
@@ -52,7 +52,7 @@ export async function LiveData() {
             {news.map((n) => (
               <div
                 key={n.id}
-                className="rounded-lg border border-white/5 bg-background/40 p-3 transition hover:border-white/10"
+                className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3 transition hover:border-border/60"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -81,7 +81,7 @@ export async function LiveData() {
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <ArrowDownUp className="h-4 w-4 text-brand-300" />
+                <ArrowDownUp className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                 ETH spot ETF flows (7d)
               </CardTitle>
               <CardDescription className="text-xs">/api/v1/etf/spot/eth/flow</CardDescription>
@@ -90,19 +90,19 @@ export async function LiveData() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-white/5 bg-background/40 p-3">
+              <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   Today net
                 </div>
-                <div className={`mt-1 text-lg font-semibold ${todayFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                <div className={`mt-1 text-lg font-semibold ${todayFlow >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
                   {todayFlow >= 0 ? "+" : ""}{formatUSD(todayFlow, { maxFrac: 0 })}
                 </div>
               </div>
-              <div className="rounded-lg border border-white/5 bg-background/40 p-3">
+              <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   7d cumulative
                 </div>
-                <div className={`mt-1 text-lg font-semibold ${cumFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                <div className={`mt-1 text-lg font-semibold ${cumFlow >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
                   {cumFlow >= 0 ? "+" : ""}{formatUSD(cumFlow, { maxFrac: 0 })}
                 </div>
               </div>
@@ -132,7 +132,7 @@ export async function LiveData() {
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Boxes className="h-4 w-4 text-brand-300" />
+                <Boxes className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                 SSI Index — {mag7?.symbol ?? "MAG7.ssi"}
               </CardTitle>
               <CardDescription className="text-xs">/api/v1/index/MAG7.ssi</CardDescription>

@@ -61,7 +61,7 @@ export function Portfolio() {
         <CardHeader className="flex-row items-start justify-between space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-brand-300" />
+              <Wallet className="h-4 w-4 text-brand-600 dark:text-brand-300" />
               Live portfolio
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground italic">
@@ -114,7 +114,7 @@ export function Portfolio() {
             </ResponsiveContainer>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-white/5">
+          <div className="overflow-hidden rounded-lg border border-border/40">
             <table className="w-full text-left text-xs">
               <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
                 <tr>
@@ -139,7 +139,7 @@ export function Portfolio() {
                     </td>
                     <td
                       className={`px-3 py-2 text-right font-mono ${
-                        p.pnlUsd >= 0 ? "text-emerald-300" : "text-red-300"
+                        p.pnlUsd >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
                       }`}
                     >
                       {p.pnlUsd >= 0 ? "+" : ""}
@@ -157,7 +157,7 @@ export function Portfolio() {
         <Card className="border-amber-500/20 bg-amber-500/[0.04]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-300" />
+              <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
               Rebalance proposed by Mosaic
             </CardTitle>
           </CardHeader>
@@ -187,7 +187,7 @@ function ProposalCard({
   onDismiss: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-background/40 p-4">
+    <div className="rounded-xl border border-border/40 bg-secondary/30 dark:bg-background/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <Badge variant="warning" className="text-[10px]">
@@ -205,7 +205,7 @@ function ProposalCard({
         {proposal.changes.map((c) => (
           <div
             key={c.symbol}
-            className="rounded-lg border border-white/5 bg-card/40 p-3"
+            className="rounded-lg border border-border/40 bg-card/80 dark:bg-card/40 p-3"
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold">{c.symbol}</span>
@@ -214,7 +214,7 @@ function ProposalCard({
                 <span className="mx-1 text-muted-foreground">→</span>
                 <span
                   className={
-                    c.toWeight > c.fromWeight ? "text-emerald-300" : "text-red-300"
+                    c.toWeight > c.fromWeight ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
                   }
                 >
                   {(c.toWeight * 100).toFixed(1)}%
@@ -236,9 +236,9 @@ function ProposalCard({
             return (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-white/5 bg-background/40 px-2 py-1 text-[11px]"
+                className="flex items-center gap-1.5 rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 px-2 py-1 text-[11px]"
               >
-                <Icon className="h-3 w-3 text-brand-300" />
+                <Icon className="h-3 w-3 text-brand-600 dark:text-brand-300" />
                 <span>{c.label}</span>
               </div>
             );

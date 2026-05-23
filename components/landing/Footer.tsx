@@ -3,11 +3,11 @@ import { Github, Hexagon } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/5">
+    <footer className="border-t border-border/40">
       <div className="mx-auto flex max-w-7xl flex-col items-start gap-6 px-6 py-12 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-500/20 ring-1 ring-brand-500/40">
-            <Hexagon className="h-4 w-4 text-brand-300" />
+            <Hexagon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           </span>
           <div>
             <div className="font-semibold">Mosaic</div>
@@ -37,7 +37,7 @@ export function Footer() {
           </Link>
         </div>
       </div>
-      <div className="border-t border-white/5">
+      <div className="border-t border-border/40">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-2 px-6 py-5 text-xs text-muted-foreground md:flex-row md:items-center">
           <div>
             Built by{" "}
@@ -45,7 +45,7 @@ export function Footer() {
               href="https://github.com/janneh2000"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:text-brand-300 hover:underline"
+              className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:text-brand-600 dark:text-brand-300 hover:underline"
             >
               <Github className="h-3.5 w-3.5" />
               Rivaldo

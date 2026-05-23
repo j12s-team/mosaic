@@ -1,25 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { ThesisInput } from "@/components/dashboard/ThesisInput";
 import { BasketProposal } from "@/components/dashboard/BasketProposal";
 import { ExecutionPreview } from "@/components/dashboard/ExecutionPreview";
 import { Portfolio } from "@/components/dashboard/Portfolio";
 import { AgentLog, type LogStep } from "@/components/dashboard/AgentLog";
+import { BacktestPanel } from "@/components/dashboard/BacktestPanel";
+import { MonteCarloPanel } from "@/components/dashboard/MonteCarloPanel";
+import { StressTestPanel } from "@/components/dashboard/StressTestPanel";
+import { MyBaskets } from "@/components/dashboard/MyBaskets";
+import { ProductTour } from "@/components/dashboard/ProductTour";
+import { HealthBanner } from "@/components/dashboard/HealthBanner";
+import { Button } from "@/components/ui/button";
 import type { Basket, ExecutionPlan, RiskLevel } from "@/lib/types";
+import type { BacktestResult } from "@/lib/backtest";
+import type { MonteCarloResult } from "@/lib/montecarlo";
+import type { ScenarioResult } from "@/lib/scenarios";
 import { sleep } from "@/lib/utils";
+import { HelpCircle } from "lucide-react";
 
 export default function AppPage() {
   const [loading, setLoading] = useState(false);
   const [basket, setBasket] = useState<Basket | null>(null);
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [steps, setSteps] = useState<LogStep[]>([]);
+  const [backtest, setBacktest] = useState<BacktestResult | null>(null);
+  const [mc, setMc] = useState<MonteCarloResult | null>(null);
+  const [scenarios, setScenarios] = useState<ScenarioResult[] | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
+
+  async function runAnalysis(b: Basket) {
+    setAnalysing(true);
+    setBacktest(null);
+    setMc(null);
+    setScenarios(null);
+    try {
+      const res = await fetch("/api/backtest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ basket: b, horizonDays: 90 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBacktest(data.backtest);
+        setMc(data.monteCarlo);
+        setScenarios(data.scenarios);
+      }
+    } finally {
+      setAnalysing(false);
+    }
+  }
 
   async function onSubmit(input: { prompt: string; amountUsd: number; risk: RiskLevel }) {
     setLoading(true);
     setBasket(null);
     setPlan(null);
+    setBacktest(null);
+    setMc(null);
+    setScenarios(null);
 
     const seq: LogStep[] = [
       { id: "parse", label: "Parsing thesis", status: "running" },
@@ -59,31 +101,115 @@ export default function AppPage() {
       setBasket(result.basket);
       setPlan(result.plan);
       await advance("plan", `Total est. slippage: ${result.plan.estTotalSlippageBps} bps`);
+      // Kick off backtest / MC / scenarios in parallel with the user reviewing.
+      runAnalysis(result.basket);
     }
     setLoading(false);
   }
 
+  // Snapshot poll: every time we land on the dashboard, push a t-now snapshot
+  // for any saved basket so the realised-return curve fills in.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getSession } = await import("@/lib/wallet");
+        const { HOUSE_OWNER, listBaskets, appendSnapshot } = await import("@/lib/storage");
+        const owner = getSession()?.address ?? HOUSE_OWNER;
+        const saved = listBaskets(owner).filter((b) => b.status === "active");
+        for (const b of saved) {
+          if (cancelled) return;
+          // Mock realised value: drift execution notional by a small random walk.
+          // In production this is portfolio.netValueUsd from SoDEX positions.
+          const days = Math.max(
+            0.01,
+            (Date.now() - new Date(b.execution.executedAt).getTime()) / (24 * 3600 * 1000),
+          );
+          const driftPct = (Math.sin(days * 7 + b.basket.id.length) * 0.04 + days * 0.002) ;
+          const mv = b.execution.notionalUsd * (1 + driftPct);
+          appendSnapshot(owner, {
+            basketId: b.basket.id,
+            takenAt: new Date().toISOString(),
+            marketValueUsd: +mv.toFixed(2),
+            pnlUsd: +(mv - b.execution.notionalUsd).toFixed(2),
+            pnlPct: +driftPct.toFixed(4),
+          });
+        }
+      } catch {
+        // ignore — storage / wallet are best-effort
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-7xl px-6 pt-10 pb-24">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight">Mosaic agent</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Thesis → basket → execution → portfolio. The whole loop, on one screen.
-          </p>
+      <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 sm:pt-10">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mosaic agent</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Thesis → basket → backtest → execution → portfolio.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setTourOpen(true)}>
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Replay tour</span>
+          </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <HealthBanner />
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-6">
-            <ThesisInput onSubmit={onSubmit} loading={loading} />
-            {basket && <BasketProposal basket={basket} />}
-            {plan && <ExecutionPreview plan={plan} />}
+            <div data-tour="thesis">
+              <ThesisInput onSubmit={onSubmit} loading={loading} />
+            </div>
+
+            {basket && (
+              <div data-tour="basket">
+                <BasketProposal basket={basket} />
+              </div>
+            )}
+
+            {basket && (
+              <div data-tour="analysis" className="space-y-6">
+                {analysing && !backtest && (
+                  <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 text-sm text-muted-foreground backdrop-blur-xl">
+                    Running backtest + Monte Carlo + scenario stress tests…
+                  </div>
+                )}
+                {backtest && <BacktestPanel result={backtest} />}
+                {mc && <MonteCarloPanel result={mc} />}
+                {scenarios && <StressTestPanel results={scenarios} />}
+              </div>
+            )}
+
+            {plan && basket && (
+              <div data-tour="execute">
+                <ExecutionPreview
+                  plan={plan}
+                  basket={basket}
+                  onExecuted={() => setRefreshKey((k) => k + 1)}
+                />
+              </div>
+            )}
+
+            <MyBaskets key={refreshKey} />
+
             <Portfolio />
           </div>
+
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-            {steps.length > 0 && <AgentLog steps={steps} />}
-            <div className="rounded-xl border border-white/5 bg-card/40 p-4 backdrop-blur-xl">
+            {steps.length > 0 && (
+              <div data-tour="agent">
+                <AgentLog steps={steps} />
+              </div>
+            )}
+            <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
               <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                 Mode
               </div>
@@ -100,26 +226,46 @@ export default function AppPage() {
                 <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
                   .env.local
                 </span>
-                to flip into live mode.
+                to flip into live mode. Toggle
+                <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
+                  MOSAIC_NETWORK=mainnet
+                </span>
+                only after depositing collateral per the SoDEX docs.
               </p>
               <a
                 href="https://sosovalue.gitbook.io/soso-value-api-doc"
                 target="_blank"
-                className="mt-3 inline-block text-xs text-brand-300 underline-offset-4 hover:underline"
+                className="mt-3 inline-block text-xs text-brand-600 dark:text-brand-300 underline-offset-4 hover:underline"
               >
                 SoSoValue API docs →
               </a>
               <a
                 href="https://sodex.com/documentation/api/api"
                 target="_blank"
-                className="mt-1 inline-block text-xs text-brand-300 underline-offset-4 hover:underline"
+                className="mt-1 inline-block text-xs text-brand-600 dark:text-brand-300 underline-offset-4 hover:underline"
               >
                 SoDEX API docs →
               </a>
             </div>
+
+            <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Wave 2 upgrades
+              </div>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li>• 90-day backtest with Sharpe / Sortino / max DD</li>
+                <li>• 1,000-path Monte Carlo with VaR &amp; CVaR</li>
+                <li>• Three historical regime stress tests</li>
+                <li>• WalletConnect-style SIWE login</li>
+                <li>• Per-wallet basket persistence + realised tracking</li>
+                <li>• Live SoDEX testnet wiring (mainnet env-flagged)</li>
+                <li>• Inline product tour for first-time users</li>
+              </ul>
+            </div>
           </div>
         </div>
       </main>
+      <ProductTour forceOpen={tourOpen} onClose={() => setTourOpen(false)} />
     </>
   );
 }

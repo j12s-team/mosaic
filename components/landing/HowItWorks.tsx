@@ -35,7 +35,7 @@ export function HowItWorks() {
   return (
     <section id="how" className="relative mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand-300">
+        <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
           How Mosaic works
         </p>
         <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
@@ -47,16 +47,16 @@ export function HowItWorks() {
         {STEPS.map((s, i) => (
           <li
             key={s.num}
-            className="group relative flex flex-col rounded-2xl border border-white/5 bg-card/40 p-6 backdrop-blur-xl"
+            className="group relative flex flex-col rounded-2xl border border-border/40 bg-card/80 dark:bg-card/40 p-6 backdrop-blur-xl"
           >
             <div className="mb-6 flex items-center justify-between">
               <span className="font-mono text-xs text-muted-foreground">{s.num}</span>
-              <s.icon className="h-5 w-5 text-brand-300" />
+              <s.icon className="h-5 w-5 text-brand-600 dark:text-brand-300" />
             </div>
             <h3 className="text-lg font-semibold">{s.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
             <div className="mt-auto pt-5">
-              <p className="text-xs font-medium uppercase tracking-wider text-brand-300/80">
+              <p className="text-xs font-medium uppercase tracking-wider text-brand-600/80 dark:text-brand-300/80">
                 {s.bullet}
               </p>
             </div>

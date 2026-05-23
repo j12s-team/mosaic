@@ -5,14 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatUSD } from "@/lib/utils";
-import type { ExecutionPlan } from "@/lib/types";
+import type { Basket, ExecutionPlan } from "@/lib/types";
 import { CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
+import { getSession } from "@/lib/wallet";
+import { HOUSE_OWNER, saveBasket, appendSnapshot } from "@/lib/storage";
 
 interface Props {
   plan: ExecutionPlan;
+  basket: Basket;
+  onExecuted?: () => void;
 }
 
-export function ExecutionPreview({ plan }: Props) {
+export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
   const [stage, setStage] = useState<"review" | "confirm" | "executing" | "done">("review");
 
   async function onExecute() {
@@ -35,7 +39,34 @@ export function ExecutionPreview({ plan }: Props) {
       setStage("review");
       return;
     }
+
+    // Persist the basket so the "thesis vs realised" loop can begin.
+    const owner = getSession()?.address ?? HOUSE_OWNER;
+    saveBasket(owner, {
+      basket,
+      execution: {
+        executedAt: new Date().toISOString(),
+        notionalUsd: plan.totalNotionalUsd,
+        fills: plan.legs.map((l) => ({
+          symbol: l.market.split("/")[0],
+          price: l.estPrice,
+          weight: l.notionalUsd / plan.totalNotionalUsd,
+        })),
+      },
+      savedAt: new Date().toISOString(),
+      status: "active",
+    });
+    // Initial t=0 snapshot — realised return starts at 0%.
+    appendSnapshot(owner, {
+      basketId: basket.id,
+      takenAt: new Date().toISOString(),
+      marketValueUsd: plan.totalNotionalUsd,
+      pnlUsd: 0,
+      pnlPct: 0,
+    });
+
     setStage("done");
+    onExecuted?.();
   }
 
   return (
@@ -43,7 +74,7 @@ export function ExecutionPreview({ plan }: Props) {
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-brand-300" />
+            <Zap className="h-4 w-4 text-brand-600 dark:text-brand-300" />
             SoDEX execution plan
           </CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -53,7 +84,7 @@ export function ExecutionPreview({ plan }: Props) {
         <Badge variant="brand">{plan.venue}</Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg border border-white/5 bg-background/40 p-3">
+        <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Estimated total slippage (size-weighted)
           </div>
@@ -62,7 +93,7 @@ export function ExecutionPreview({ plan }: Props) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-white/5">
+        <div className="overflow-hidden rounded-lg border border-border/40">
           <table className="w-full text-left text-xs">
             <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -109,7 +140,7 @@ export function ExecutionPreview({ plan }: Props) {
         {stage === "confirm" && (
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="flex items-start gap-3">
-              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300" />
+              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-700 dark:text-amber-300" />
               <div className="space-y-2 text-sm">
                 <p className="font-medium">
                   This will place {plan.legs.length} live orders on SoDEX (
@@ -131,15 +162,15 @@ export function ExecutionPreview({ plan }: Props) {
         )}
 
         {stage === "executing" && (
-          <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-background/40 p-4 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin text-brand-300" />
+          <div className="flex items-center gap-3 rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-4 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-300" />
             Routing {plan.legs.length} legs through SoDEX…
           </div>
         )}
 
         {stage === "done" && (
           <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
             Basket executed. View it in the portfolio panel below.
           </div>
         )}

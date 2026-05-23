@@ -30,7 +30,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
     <Card className="ring-glow">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand-300" />
+          <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           Tell Mosaic your thesis
         </CardTitle>
       </CardHeader>
@@ -51,7 +51,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
               <button
                 key={p}
                 onClick={() => setPrompt(p)}
-                className="rounded-full border border-white/5 bg-background/40 px-3 py-1 text-xs text-muted-foreground transition hover:border-white/15 hover:text-foreground"
+                className="rounded-full border border-border/40 bg-secondary/30 dark:bg-background/40 px-3 py-1 text-xs text-muted-foreground transition hover:border-white/15 hover:text-foreground"
               >
                 {p.slice(0, 38)}
                 {p.length > 38 ? "…" : ""}
@@ -75,7 +75,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
                 onChange={(e) => setAmount(Number(e.target.value))}
                 className="flex-1 accent-brand-400"
               />
-              <span className="w-24 rounded-md border border-input bg-background/40 px-3 py-1.5 text-right text-sm font-mono">
+              <span className="w-24 rounded-md border border-input bg-secondary/30 dark:bg-background/40 px-3 py-1.5 text-right text-sm font-mono">
                 ${amount.toLocaleString()}
               </span>
             </div>
@@ -92,8 +92,8 @@ export function ThesisInput({ onSubmit, loading }: Props) {
                   onClick={() => setRisk(r)}
                   className={`rounded-md border px-3 py-1.5 text-xs capitalize transition ${
                     risk === r
-                      ? "border-brand-500/40 bg-brand-500/10 text-brand-200"
-                      : "border-white/5 bg-background/40 text-muted-foreground hover:border-white/15"
+                      ? "border-brand-500/40 bg-brand-500/10 text-brand-700 dark:text-brand-200"
+                      : "border-border/40 bg-secondary/30 dark:bg-background/40 text-muted-foreground hover:border-white/15"
                   }`}
                 >
                   {r}
