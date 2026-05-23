@@ -33,7 +33,7 @@ export function AgenticLoop() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-brand-500/[0.04] to-transparent" />
       <div className="mx-auto max-w-7xl px-6 py-24">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-medium uppercase tracking-widest text-brand-300">
+          <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
             The agentic loop
           </p>
           <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
@@ -61,19 +61,19 @@ export function AgenticLoop() {
 
             {NODES.map((n) => (
               <div key={n.title} className="relative flex flex-col items-center text-center">
-                <div className="ring-glow grid h-24 w-24 place-items-center rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl">
-                  <n.icon className="h-7 w-7 text-brand-300" />
+                <div className="ring-glow grid h-24 w-24 place-items-center rounded-2xl border border-border/60 bg-card/90 dark:bg-card/60 backdrop-blur-xl">
+                  <n.icon className="h-7 w-7 text-brand-600 dark:text-brand-300" />
                 </div>
                 <h3 className="mt-5 text-base font-semibold">{n.title}</h3>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">{n.body}</p>
-                <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-brand-300/80">
+                <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-brand-600/80 dark:text-brand-300/80">
                   {n.detail}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-white/5 bg-card/40 p-6 backdrop-blur-xl">
+          <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-border/40 bg-card/80 dark:bg-card/40 p-6 backdrop-blur-xl">
             <p className="text-sm leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">Risk control by construction.</span>{" "}
               No market orders. No silent rebalances. No off-chain custody. The agent observes and

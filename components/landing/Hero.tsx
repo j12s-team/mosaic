@@ -9,13 +9,13 @@ export function Hero() {
       <div className="grid-bg pointer-events-none absolute inset-0 opacity-50" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-brand-500/20 via-brand-500/5 to-transparent blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-7xl flex-col items-center px-6 pt-28 pb-20 text-center">
+      <div className="relative mx-auto flex max-w-7xl flex-col items-center px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-20">
         <Badge variant="brand" className="mb-6 backdrop-blur">
           <Sparkles className="h-3 w-3" />
           <span className="font-mono text-[11px]">SoSoValue × SoDEX × Agentic AI</span>
         </Badge>
 
-        <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
+        <h1 className="max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-7xl">
           Your personal crypto{" "}
           <span className="text-gradient-brand">hedge fund</span>,
           <br className="hidden sm:block" />
@@ -51,7 +51,7 @@ export function Hero() {
           ].map((s) => (
             <div
               key={s.k}
-              className="rounded-xl border border-white/5 bg-card/40 px-4 py-3 backdrop-blur-xl"
+              className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 px-4 py-3 backdrop-blur-xl"
             >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {s.k}

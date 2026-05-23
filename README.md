@@ -1,10 +1,16 @@
 # Mosaic — your personal crypto hedge fund, run by an agent
 
-> **SoSoValue Buildathon** · Wave 1 submission · Build phase: May 1 – May 12, 2026
+> **SoSoValue Buildathon** · Wave 1 ✓ (avg ~8.49 / 10) · **Wave 2 in build (May 18 – May 29, 2026)**
 >
 > An agentic on-chain index manager: describe a thesis in plain English, Mosaic constructs
 > a thematic portfolio from SoSoValue data, executes it through the SoDEX orderbook, and
 > proposes rebalances when the underlying signals shift — with the user in the confirm loop.
+>
+> **Wave 2 ships:** 90-day backtest engine, 1,000-path Monte Carlo (VaR / CVaR), three
+> historical regime stress tests, WalletConnect-style SIWE identity, per-wallet basket
+> persistence with realised-return tracking, live SoDEX testnet wiring, and an inline
+> first-run product tour. See [`WAVE2.md`](./WAVE2.md) for the line-by-line response to
+> each Wave 1 judge critique.
 
 ---
 
@@ -60,21 +66,30 @@ Every loop pass that touches user funds is gated by an explicit confirm.
 mosaic/
 ├── app/
 │   ├── page.tsx                  Landing page (server-rendered with live SoSoValue data)
-│   ├── app/page.tsx              Interactive dashboard (thesis → basket → execute → portfolio)
+│   ├── app/page.tsx              Interactive dashboard (thesis → basket → backtest → execute → portfolio)
 │   └── api/
 │       ├── thesis/route.ts       POST: build basket + execution plan
+│       ├── backtest/route.ts     POST: backtest + Monte Carlo + scenario stress tests (Wave 2)
 │       ├── execute/route.ts      POST: place orders on SoDEX (explicit confirm flag required)
 │       └── portfolio/route.ts    GET: portfolio + pending rebalance proposals
 ├── lib/
 │   ├── sosovalue.ts              Typed SoSoValue API client (news, flows, SSI, metrics)
-│   ├── sodex.ts                  Typed SoDEX client + execution-plan builder + estimateFill
+│   ├── sodex.ts                  Typed SoDEX client + execution-plan builder + currentNetwork()
 │   ├── agent.ts                  Thesis classifier + risk-aware scoring + softmax weights
+│   ├── historical.ts             Deterministic 180d daily-return seeds for the universe (Wave 2)
+│   ├── backtest.ts               Daily-rebalanced backtest + risk-metric kernel (Wave 2)
+│   ├── montecarlo.ts             Bootstrap MC simulator with VaR / CVaR (Wave 2)
+│   ├── scenarios.ts              COVID / FTX / ETH-ETF stress-test replay (Wave 2)
+│   ├── wallet.ts                 EIP-4361 SIWE flow over window.ethereum (Wave 2)
+│   ├── storage.ts                Per-wallet basket persistence + snapshots (Wave 2)
 │   ├── mock.ts                   Deterministic in-memory data so the demo never breaks
 │   ├── types.ts                  Shared domain types
 │   └── utils.ts
 ├── components/
 │   ├── landing/                  Hero / Problem / HowItWorks / LiveData / AgenticLoop / WhyMosaic / CTA / Footer / Navbar
-│   ├── dashboard/                ThesisInput / BasketProposal / ExecutionPreview / Portfolio / AgentLog
+│   ├── dashboard/                ThesisInput / BasketProposal / BacktestPanel / MonteCarloPanel /
+│   │                             StressTestPanel / ExecutionPreview / Portfolio / MyBaskets /
+│   │                             WalletButton / ProductTour / AgentLog
 │   └── ui/                       button / card / badge / input / progress
 └── tailwind.config.ts            Custom dark-glass theme
 ```
@@ -126,7 +141,9 @@ npm run typecheck:libs   # checks only lib/*.ts, no Next/React deps required
 |---|---|---|
 | `SOSOVALUE_API_KEY` | optional | Live SoSoValue API. Falls back to mocks if missing. |
 | `SODEX_API_KEY` / `SODEX_API_SECRET` | optional | SoDEX auth — testnet by default. |
-| `SODEX_BASE_URL` | optional | Defaults to `https://api-testnet.sodex.com`. |
+| `MOSAIC_NETWORK` | optional | `testnet` (default, safe) or `mainnet`. Picks the SoDEX base URL automatically. |
+| `NEXT_PUBLIC_MOSAIC_NETWORK` | optional | Same value as above, exposed to the browser so the navbar can show the live network badge. |
+| `SODEX_BASE_URL` | optional | Overrides the network-picked URL if set. |
 | `ANTHROPIC_API_KEY` | optional | Use Claude Haiku for thesis interpretation. Falls back to keyword classifier. |
 | `MOSAIC_USE_MOCKS` | optional | Force mock layer (`true`/`false`). |
 
@@ -156,11 +173,28 @@ treating them as generic price oracles.
 
 ---
 
-## Roadmap (Wave 2 → Wave 3)
+## Roadmap
 
-- **Wave 2** — Live SoDEX testnet trading, persisted user baskets via WalletConnect, real ETF-flow regression for stronger triggers, basket back-testing.
-- **Wave 3** — Mainnet SoDEX execution behind delegated permissions, multi-basket dashboards, agent that publishes its own SSI-style index for follow trading.
-- **Demo Day** — Live thesis → on-chain rebalance against testnet, end-to-end, in under 60 seconds.
+### Wave 2 — in build (May 18 – May 29, 2026) — see [`WAVE2.md`](./WAVE2.md)
+
+Direct response to each Wave 1 judge critique. Shipping:
+
+- **Backtest + Monte Carlo + stress tests** (answers jzddd's "needs backtesting + risk metrics + stress tests")
+- **Per-wallet basket persistence + realised-return tracking** (answers SmartCoded's "thesis vs one-week realised return")
+- **Inline first-run product tour** (answers MuhammadBa's "onboarding tutorial")
+- **WalletConnect-style SIWE identity**
+- **Live SoDEX testnet wiring** + mainnet env-flagged path
+
+### Wave 3
+
+- `@reown/appkit` WalletConnect (mobile + hardware wallets)
+- Supabase-backed persistence + server-side snapshotter
+- Mainnet SoDEX execution under delegated session keys
+- Mosaic agent publishes its own SSI-style index for follow trading
+
+### Demo Day
+
+- Live thesis → on-chain rebalance against testnet, end-to-end, in under 60 seconds.
 
 ---
 

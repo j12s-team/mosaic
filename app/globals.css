@@ -3,7 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme — clean, financial-terminal-on-paper. */
   :root {
+    --background: 220 30% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
+
+    --accent: 220 14% 93%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 90%;
+    --input: 220 13% 88%;
+    --ring: 210 100% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  /* Dark theme — the original Wave 1 palette. */
+  .dark {
     --background: 222 47% 5%;
     --foreground: 210 40% 98%;
 
@@ -28,8 +59,6 @@
     --border: 217 19% 18%;
     --input: 217 19% 18%;
     --ring: 210 100% 60%;
-
-    --radius: 0.75rem;
   }
 
   * {
@@ -37,16 +66,27 @@
   }
 
   html {
+    color-scheme: light dark;
+  }
+
+  html.dark {
     color-scheme: dark;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
+      radial-gradient(60% 50% at 50% 0%, rgba(49, 158, 255, 0.10) 0%, transparent 60%),
+      radial-gradient(40% 40% at 100% 30%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
+      radial-gradient(30% 30% at 0% 80%, rgba(34, 197, 94, 0.05) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image:
       radial-gradient(60% 50% at 50% 0%, rgba(49, 158, 255, 0.15) 0%, transparent 60%),
       radial-gradient(40% 40% at 100% 30%, rgba(124, 58, 237, 0.10) 0%, transparent 60%),
       radial-gradient(30% 30% at 0% 80%, rgba(34, 197, 94, 0.08) 0%, transparent 60%);
-    background-attachment: fixed;
   }
 
   ::selection {
@@ -56,7 +96,7 @@
 
 @layer utilities {
   .glass {
-    @apply bg-card/40 backdrop-blur-xl border border-white/5;
+    @apply bg-card/40 backdrop-blur-xl border border-border/40;
   }
   .grid-bg {
     background-size: 48px 48px;
@@ -64,10 +104,16 @@
     mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 80%);
   }
   .text-gradient {
-    @apply bg-gradient-to-br from-white via-brand-100 to-brand-300 bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-foreground via-brand-500 to-brand-700 bg-clip-text text-transparent;
+  }
+  .dark .text-gradient {
+    @apply from-white via-brand-100 to-brand-300;
   }
   .text-gradient-brand {
-    @apply bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 bg-clip-text text-transparent;
+  }
+  .dark .text-gradient-brand {
+    @apply from-brand-300 via-brand-400 to-brand-600;
   }
   .ring-glow {
     box-shadow:

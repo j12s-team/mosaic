@@ -11,7 +11,7 @@ export interface LogStep {
 
 export function AgentLog({ steps }: { steps: LogStep[] }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-card/40 p-4 backdrop-blur-xl">
+    <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
       <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
         Agent log
       </div>
@@ -20,11 +20,11 @@ export function AgentLog({ steps }: { steps: LogStep[] }) {
           <li key={s.id} className="flex items-start gap-3">
             <div className="mt-0.5">
               {s.status === "done" ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
               ) : s.status === "running" ? (
-                <Loader2 className="h-4 w-4 animate-spin text-brand-300" />
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-300" />
               ) : (
-                <div className="h-4 w-4 rounded-full border border-white/10" />
+                <div className="h-4 w-4 rounded-full border border-border/60" />
               )}
             </div>
             <div>

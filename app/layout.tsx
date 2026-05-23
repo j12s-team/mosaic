@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { themeBootScript } from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Mosaic — Your personal crypto hedge fund, run by an agent",
@@ -28,7 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Block painting until we've set the theme class to avoid FOUC. */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="min-h-screen font-sans">{children}</body>
     </html>
   );

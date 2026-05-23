@@ -32,7 +32,7 @@ export function WhyMosaic() {
   return (
     <section id="why" className="relative mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand-300">
+        <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
           Built for the rubric
         </p>
         <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
@@ -51,7 +51,7 @@ export function WhyMosaic() {
               className="grid grid-cols-1 gap-4 p-6 md:grid-cols-[2fr_1fr_4fr]"
             >
               <div className="font-medium">{r.criterion}</div>
-              <div className="font-mono text-sm text-brand-300">{r.weight}</div>
+              <div className="font-mono text-sm text-brand-600 dark:text-brand-300">{r.weight}</div>
               <div className="text-sm text-muted-foreground">{r.delivery}</div>
             </div>
           ))}
