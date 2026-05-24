@@ -1,10 +1,14 @@
 // SoDEX API client.
 // Docs: https://sodex.com/documentation/api/api
 //
-// Notes:
-//   - Testnet base: https://api-testnet.sodex.com  (no whitelist required)
-//   - Mainnet base: https://api.sodex.com          (Silver SoPoints OR Buildathon whitelist)
-//   - Authenticated POSTs (place order) use HMAC-SHA256 over the request body.
+// Gateway URLs (spot REST):
+//   - Testnet: https://testnet-gw.sodex.dev/api/v1/spot
+//   - Mainnet: https://mainnet-gw.sodex.dev/api/v1/spot
+//
+// The gateway path ALREADY includes /api/v1/spot, so all paths below are
+// relative to that root (e.g. "/public/markets", "/orders", "/account/positions").
+//
+// Authenticated POSTs (place order) use HMAC-SHA256 over the request body.
 //
 // We expose a small surface intentionally — Mosaic only needs:
 //   listMarkets / orderbook / placeOrder / portfolio.
@@ -14,18 +18,20 @@ import type { ExecutionPlan, OrderbookSnapshot, PortfolioPosition } from "./type
 import { MOCK_PORTFOLIO, MOCK_TOKENS, mockOrderbook } from "./mock";
 
 /**
- * Pick the SoDEX base URL.
+ * Pick the SoDEX gateway base URL.
  *
  * Priority: explicit SODEX_BASE_URL > MOSAIC_NETWORK > default (testnet).
  *
  * Wave 2 ships mainnet path env-flagged so demos never accidentally execute
- * real money. Set `MOSAIC_NETWORK=mainnet` *and* deposit collateral per the
- * SoDEX docs to enable.
+ * real money. Set `MOSAIC_NETWORK=mainnet` *and* `MOSAIC_ALLOW_MAINNET_ORDERS=yes`
+ * after depositing collateral per the SoDEX docs to enable.
  */
 function baseUrl() {
   if (process.env.SODEX_BASE_URL) return process.env.SODEX_BASE_URL;
-  if (process.env.MOSAIC_NETWORK === "mainnet") return "https://api.sodex.com";
-  return "https://api-testnet.sodex.com";
+  if (process.env.MOSAIC_NETWORK === "mainnet") {
+    return "https://mainnet-gw.sodex.dev/api/v1/spot";
+  }
+  return "https://testnet-gw.sodex.dev/api/v1/spot";
 }
 
 export function currentNetwork(): "testnet" | "mainnet" {
@@ -85,7 +91,7 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
  * user wastes time configuring keys.
  */
 export async function pingPublic(): Promise<{ ok: boolean; latencyMs: number; status?: number; error?: string }> {
-  const url = `${baseUrl()}/v1/public/markets`;
+  const url = `${baseUrl()}/public/markets`;
   const start = Date.now();
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -114,7 +120,7 @@ export async function listMarkets(): Promise<Market[]> {
     }));
   }
   try {
-    const raw = await publicGet<{ data: any[] }>("/v1/public/markets");
+    const raw = await publicGet<{ data: any[] }>("/public/markets");
     return raw.data.map((m: any) => ({
       symbol: m.symbol,
       base: m.baseAsset,
@@ -143,7 +149,7 @@ export async function getOrderbook(market: string): Promise<OrderbookSnapshot> {
   }
   try {
     const raw = await publicGet<{ data: any }>(
-      `/v1/public/depth?symbol=${encodeURIComponent(market)}&limit=8`,
+      `/public/depth?symbol=${encodeURIComponent(market)}&limit=8`,
     );
     const bids = raw.data.bids.map(([p, s]: [string, string]) => ({ price: +p, size: +s }));
     const asks = raw.data.asks.map(([p, s]: [string, string]) => ({ price: +p, size: +s }));
@@ -210,7 +216,7 @@ export async function placeOrder(input: PlaceOrderInput) {
       "Mainnet orders disabled. Set MOSAIC_ALLOW_MAINNET_ORDERS=yes to enable after depositing collateral.",
     );
   }
-  return call("POST", "/v1/orders", {
+  return call("POST", "/orders", {
     symbol: input.market,
     side: input.side.toUpperCase(),
     type: "LIMIT_IOC",
@@ -222,7 +228,7 @@ export async function placeOrder(input: PlaceOrderInput) {
 export async function getPortfolioPositions(): Promise<PortfolioPosition[]> {
   if (authedOrMock()) return MOCK_PORTFOLIO.positions;
   try {
-    const raw = await call<{ data: any[] }>("GET", "/v1/account/positions");
+    const raw = await call<{ data: any[] }>("GET", "/account/positions");
     return raw.data.map((p: any) => ({
       symbol: p.symbol,
       name: p.name ?? p.symbol,
