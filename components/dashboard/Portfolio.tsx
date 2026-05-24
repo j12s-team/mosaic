@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPct, formatUSD } from "@/lib/utils";
+import { getSession } from "@/lib/wallet";
 import type { PortfolioSnapshot, RebalanceProposal } from "@/lib/types";
 import {
   AreaChart,
@@ -37,7 +38,12 @@ export function Portfolio() {
   const [resolved, setResolved] = useState<Record<string, "approved" | "dismissed">>({});
 
   useEffect(() => {
-    fetch("/api/portfolio")
+    // If the user has connected a wallet, pass the address so the API can
+    // fetch real SoDEX balances. Without a wallet we still get the demo
+    // portfolio so the UI is never empty.
+    const addr = getSession()?.address;
+    const url = addr ? `/api/portfolio?address=${encodeURIComponent(addr)}` : "/api/portfolio";
+    fetch(url)
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null));

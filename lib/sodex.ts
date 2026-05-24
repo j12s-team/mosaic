@@ -1,31 +1,32 @@
 // SoDEX API client.
 // Docs: https://sodex.com/documentation/api/api
+//       https://sodex.com/documentation/api/rest-v1/sodex-rest-spot-api
 //
-// Gateway URLs (spot REST):
+// Spot REST gateway:
 //   - Testnet: https://testnet-gw.sodex.dev/api/v1/spot
 //   - Mainnet: https://mainnet-gw.sodex.dev/api/v1/spot
 //
-// The gateway path ALREADY includes /api/v1/spot, so all paths below are
-// relative to that root (e.g. "/public/markets", "/orders", "/account/positions").
+// Symbol convention: SoDEX trades v-asset pairs joined with underscore,
+// e.g. "vBTC_vUSDC". Internal Mosaic symbols are bare ("BTC", "ETH", ...),
+// so we go through `toSodexSymbol()` at the API boundary.
 //
-// Authenticated POSTs (place order) use HMAC-SHA256 over the request body.
+// Authentication:
+//   - Public read endpoints (markets, orderbook, balances) are unsigned.
+//   - Authenticated writes (place/cancel order) use EIP-712 typed signatures.
+//     That signing pipeline is a Wave 3 deliverable — until it's wired the
+//     `placeOrder()` path short-circuits to a simulated fill so the demo
+//     flow remains complete end-to-end without risking funds.
 //
-// We expose a small surface intentionally — Mosaic only needs:
-//   listMarkets / orderbook / placeOrder / portfolio.
+// Response envelope (every endpoint):
+//   { code: number, timestamp: number, data: T, error?: string }
 
-import { createHmac } from "node:crypto";
 import type { ExecutionPlan, OrderbookSnapshot, PortfolioPosition } from "./types";
 import { MOCK_PORTFOLIO, MOCK_TOKENS, mockOrderbook } from "./mock";
 
-/**
- * Pick the SoDEX gateway base URL.
- *
- * Priority: explicit SODEX_BASE_URL > MOSAIC_NETWORK > default (testnet).
- *
- * Wave 2 ships mainnet path env-flagged so demos never accidentally execute
- * real money. Set `MOSAIC_NETWORK=mainnet` *and* `MOSAIC_ALLOW_MAINNET_ORDERS=yes`
- * after depositing collateral per the SoDEX docs to enable.
- */
+// ---------------------------------------------------------------------------
+// Network + base URL
+// ---------------------------------------------------------------------------
+
 function baseUrl() {
   if (process.env.SODEX_BASE_URL) return process.env.SODEX_BASE_URL;
   if (process.env.MOSAIC_NETWORK === "mainnet") {
@@ -38,81 +39,111 @@ export function currentNetwork(): "testnet" | "mainnet" {
   return process.env.MOSAIC_NETWORK === "mainnet" ? "mainnet" : "testnet";
 }
 
-/** Mocks only kick in when explicitly forced. Public reads no longer require a key. */
 function useMocks() {
   return process.env.MOSAIC_USE_MOCKS === "true";
 }
 
-/** Authenticated endpoints (place order, positions) require keys. */
-function authedOrMock() {
-  return useMocks() || !process.env.SODEX_API_KEY;
+// ---------------------------------------------------------------------------
+// Symbol helpers — internal "BTC/USDC" <-> SoDEX "vBTC_vUSDC"
+// ---------------------------------------------------------------------------
+
+/** "BTC/USDC" or "BTC" → "vBTC_vUSDC". Already-prefixed inputs pass through. */
+export function toSodexSymbol(market: string): string {
+  const cleaned = market.replace(/\s+/g, "");
+  if (cleaned.includes("_")) return cleaned; // already "vBTC_vUSDC"
+  const [base, quote = "USDC"] = cleaned.split("/");
+  const b = base.startsWith("v") ? base : `v${base}`;
+  const q = quote.startsWith("v") ? quote : `v${quote}`;
+  return `${b}_${q}`;
 }
 
-function sign(secret: string, payload: string) {
-  return createHmac("sha256", secret).update(payload).digest("hex");
+/** "vBTC_vUSDC" → "BTC/USDC" for display. */
+export function fromSodexSymbol(symbol: string): string {
+  if (!symbol.includes("_")) return symbol;
+  const [b, q] = symbol.split("_");
+  const base = b.startsWith("v") ? b.slice(1) : b;
+  const quote = q.startsWith("v") ? q.slice(1) : q;
+  return `${base}/${quote}`;
 }
 
-/** Unauthenticated public reads (markets, depth). No keys needed. */
+// ---------------------------------------------------------------------------
+// HTTP transport — unwraps the SoDEX response envelope and surfaces errors
+// ---------------------------------------------------------------------------
+
+interface SodexEnvelope<T> {
+  code: number;
+  timestamp: number;
+  data: T;
+  error?: string;
+}
+
 async function publicGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${baseUrl()}${path}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`SoDEX ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<T>;
-}
-
-/** Authenticated calls — orders, positions. */
-async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
-  const key = process.env.SODEX_API_KEY;
-  const secret = process.env.SODEX_API_SECRET;
-  if (!key || !secret) throw new Error("SODEX_API_KEY / SODEX_API_SECRET not set");
-
-  const ts = Date.now().toString();
-  const bodyStr = body ? JSON.stringify(body) : "";
-  const signature = sign(secret, `${ts}${method}${path}${bodyStr}`);
-
   const res = await fetch(`${baseUrl()}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-SODEX-APIKEY": key,
-      "X-SODEX-TIMESTAMP": ts,
-      "X-SODEX-SIGNATURE": signature,
-    },
-    body: bodyStr || undefined,
+    headers: { Accept: "application/json" },
     cache: "no-store",
   });
-
-  if (!res.ok) throw new Error(`SoDEX ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<T>;
+  if (!res.ok) throw new Error(`SoDEX HTTP ${res.status}: ${await res.text()}`);
+  const env = (await res.json()) as SodexEnvelope<T>;
+  if (env.code !== 0) {
+    throw new Error(`SoDEX code ${env.code}: ${env.error ?? "unknown error"}`);
+  }
+  return env.data;
 }
 
-/**
- * Lightweight unauthenticated ping — used by the dashboard's health banner
- * to confirm we can actually reach SoDEX (testnet or mainnet) before the
- * user wastes time configuring keys.
- */
-export async function pingPublic(): Promise<{ ok: boolean; latencyMs: number; status?: number; error?: string }> {
-  const url = `${baseUrl()}/public/markets`;
+// ---------------------------------------------------------------------------
+// Health ping — used by the dashboard banner
+// ---------------------------------------------------------------------------
+
+export async function pingPublic(): Promise<{
+  ok: boolean;
+  latencyMs: number;
+  status?: number;
+  error?: string;
+}> {
+  // The lightest public endpoint we can hit; returns an array of all symbols.
+  const url = `${baseUrl()}/markets/symbols`;
   const start = Date.now();
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
     return { ok: res.ok, latencyMs: Date.now() - start, status: res.status };
   } catch (e) {
     return { ok: false, latencyMs: Date.now() - start, error: (e as Error).message };
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public market data
+// ---------------------------------------------------------------------------
+
 export interface Market {
-  symbol: string;        // e.g. "TAO/USDC"
-  base: string;          // "TAO"
-  quote: string;         // "USDC"
+  symbol: string;         // Internal display, e.g. "BTC/USDC"
+  sodexSymbol: string;    // Wire-format, e.g. "vBTC_vUSDC"
+  base: string;           // "BTC"
+  quote: string;          // "USDC"
   minNotionalUsd: number;
   tickSize: number;
+}
+
+/** SoDEX SpotSymbol — we parse defensively in case the schema evolves. */
+interface RawSpotSymbol {
+  symbol: string;
+  baseAsset?: string;
+  quoteAsset?: string;
+  base?: string;
+  quote?: string;
+  minNotional?: string | number;
+  tickSize?: string | number;
+  status?: string;
 }
 
 export async function listMarkets(): Promise<Market[]> {
   if (useMocks()) {
     return Object.keys(MOCK_TOKENS).map((b) => ({
       symbol: `${b}/USDC`,
+      sodexSymbol: toSodexSymbol(b),
       base: b,
       quote: "USDC",
       minNotionalUsd: 5,
@@ -120,19 +151,29 @@ export async function listMarkets(): Promise<Market[]> {
     }));
   }
   try {
-    const raw = await publicGet<{ data: any[] }>("/public/markets");
-    return raw.data.map((m: any) => ({
-      symbol: m.symbol,
-      base: m.baseAsset,
-      quote: m.quoteAsset,
-      minNotionalUsd: Number(m.minNotional ?? 5),
-      tickSize: Number(m.tickSize ?? 0.0001),
-    }));
+    const raw = await publicGet<RawSpotSymbol[]>("/markets/symbols");
+    return raw
+      .filter((m) => !m.status || m.status === "TRADING")
+      .map((m) => {
+        const sodexSymbol = m.symbol;
+        const baseAsset = m.baseAsset ?? m.base ?? "";
+        const quoteAsset = m.quoteAsset ?? m.quote ?? "vUSDC";
+        const display = fromSodexSymbol(sodexSymbol);
+        const [base, quote = "USDC"] = display.split("/");
+        return {
+          symbol: display,
+          sodexSymbol,
+          base,
+          quote,
+          minNotionalUsd: Number(m.minNotional ?? 5),
+          tickSize: Number(m.tickSize ?? 0.0001),
+        };
+      });
   } catch (e) {
-    // If the live endpoint is unreachable we still want the demo to render.
     console.warn("[sodex] listMarkets fell back to mocks:", (e as Error).message);
     return Object.keys(MOCK_TOKENS).map((b) => ({
       symbol: `${b}/USDC`,
+      sodexSymbol: toSodexSymbol(b),
       base: b,
       quote: "USDC",
       minNotionalUsd: 5,
@@ -141,29 +182,37 @@ export async function listMarkets(): Promise<Market[]> {
   }
 }
 
+/** SoDEX OrderBook — `bids` / `asks` are `[price, size]` string tuples. */
+interface RawOrderBook {
+  bids: Array<[string, string]>;
+  asks: Array<[string, string]>;
+}
+
 export async function getOrderbook(market: string): Promise<OrderbookSnapshot> {
+  const sodexSymbol = toSodexSymbol(market);
   if (useMocks()) {
-    const base = market.split("/")[0];
+    const base = market.split("/")[0].replace(/^v/, "");
     const t = MOCK_TOKENS[base];
     return mockOrderbook(market, t?.price ?? 1);
   }
   try {
-    const raw = await publicGet<{ data: any }>(
-      `/public/depth?symbol=${encodeURIComponent(market)}&limit=8`,
+    const raw = await publicGet<RawOrderBook>(
+      `/markets/${encodeURIComponent(sodexSymbol)}/orderbook?limit=8`,
     );
-    const bids = raw.data.bids.map(([p, s]: [string, string]) => ({ price: +p, size: +s }));
-    const asks = raw.data.asks.map(([p, s]: [string, string]) => ({ price: +p, size: +s }));
+    const bids = raw.bids.map(([p, s]) => ({ price: +p, size: +s }));
+    const asks = raw.asks.map(([p, s]) => ({ price: +p, size: +s }));
+    if (!bids.length || !asks.length) throw new Error("empty orderbook");
     const mid = (bids[0].price + asks[0].price) / 2;
     return { market, bids, asks, midPrice: mid, capturedAt: new Date().toISOString() };
   } catch (e) {
-    console.warn(`[sodex] depth(${market}) fell back to mocks:`, (e as Error).message);
-    const base = market.split("/")[0];
+    console.warn(`[sodex] depth(${sodexSymbol}) fell back to mocks:`, (e as Error).message);
+    const base = market.split("/")[0].replace(/^v/, "");
     const t = MOCK_TOKENS[base];
     return mockOrderbook(market, t?.price ?? 1);
   }
 }
 
-/** Estimate VWAP fill for a USD notional, walking the orderbook. */
+/** Walk the orderbook to estimate VWAP fill for a USD notional. */
 export function estimateFill(book: OrderbookSnapshot, side: "buy" | "sell", notionalUsd: number) {
   const ladder = side === "buy" ? book.asks : book.bids;
   let remaining = notionalUsd;
@@ -188,6 +237,10 @@ export function estimateFill(book: OrderbookSnapshot, side: "buy" | "sell", noti
   };
 }
 
+// ---------------------------------------------------------------------------
+// Authenticated writes — EIP-712 signing TODO (Wave 3)
+// ---------------------------------------------------------------------------
+
 export interface PlaceOrderInput {
   market: string;
   side: "buy" | "sell";
@@ -198,54 +251,96 @@ export interface PlaceOrderInput {
 }
 
 export async function placeOrder(input: PlaceOrderInput) {
-  // Hard rule: every place order requires an explicit confirm gate up the stack.
-  if (authedOrMock()) {
-    return {
-      orderId: `mock-${Date.now()}`,
-      status: "FILLED" as const,
-      filledNotionalUsd: input.notionalUsd,
-      avgPrice: 0,
-      market: input.market,
-      side: input.side,
-      simulated: true as const,
-    };
-  }
-  // Refuse mainnet unless explicitly opted in beyond the env flag.
-  if (currentNetwork() === "mainnet" && process.env.MOSAIC_ALLOW_MAINNET_ORDERS !== "yes") {
-    throw new Error(
-      "Mainnet orders disabled. Set MOSAIC_ALLOW_MAINNET_ORDERS=yes to enable after depositing collateral.",
-    );
-  }
-  return call("POST", "/orders", {
-    symbol: input.market,
-    side: input.side.toUpperCase(),
-    type: "LIMIT_IOC",
-    quoteOrderQty: input.notionalUsd,
-    maxSlippageBps: input.maxSlippageBps ?? 50,
-  });
+  // Wave 3 TODO: build EIP-712 typed signature.
+  //
+  // 1. Build the BatchNewOrderRequest payload (compact JSON, struct-order
+  //    matching sodex-go-sdk-public).
+  // 2. payloadHash = keccak256(json.Marshal(payload)).
+  // 3. EIP-712 sign ExchangeAction{payloadHash, nonce} under domain
+  //    { name: "spot", version: "1", chainId: 138565 (testnet) or 286623 (mainnet),
+  //      verifyingContract: 0x00...00 }.
+  // 4. Prepend 0x01 to the 65-byte sig → X-API-Sign.
+  // 5. POST ${SPOT_ENDPOINT}/trade/orders/batch with X-API-Key (key name),
+  //    X-API-Sign, X-API-Nonce (Unix ms within (T-2d, T+1d)).
+  //
+  // For Wave 2, every placeOrder returns a simulated fill so the executor UI
+  // can still demonstrate the full thesis→execution→portfolio loop without
+  // requiring a registered API key + funded testnet wallet.
+  return {
+    orderId: `sim-${Date.now()}`,
+    status: "FILLED" as const,
+    filledNotionalUsd: input.notionalUsd,
+    avgPrice: 0,
+    market: input.market,
+    side: input.side,
+    simulated: true as const,
+    note: "EIP-712 signing pipeline lands in Wave 3. This is a simulated fill.",
+  };
 }
 
-export async function getPortfolioPositions(): Promise<PortfolioPosition[]> {
-  if (authedOrMock()) return MOCK_PORTFOLIO.positions;
+// ---------------------------------------------------------------------------
+// Account state — SoDEX balances are a public GET keyed by EVM address
+// ---------------------------------------------------------------------------
+
+interface RawBalanceItem {
+  coin?: string;
+  asset?: string;
+  available?: string | number;
+  free?: string | number;
+  locked?: string | number;
+  total?: string | number;
+  valueUsd?: string | number;
+}
+
+interface RawSpotBalances {
+  balances?: RawBalanceItem[];
+  totalValueUsd?: string | number;
+}
+
+/**
+ * Pulls real balances from SoDEX if a wallet address is provided, otherwise
+ * returns the mock portfolio so the dashboard always renders for unconnected
+ * visitors. Public endpoint — no signing required.
+ */
+export async function getPortfolioPositions(userAddress?: string): Promise<PortfolioPosition[]> {
+  if (useMocks() || !userAddress) return MOCK_PORTFOLIO.positions;
   try {
-    const raw = await call<{ data: any[] }>("GET", "/account/positions");
-    return raw.data.map((p: any) => ({
-      symbol: p.symbol,
-      name: p.name ?? p.symbol,
-      weight: Number(p.weight ?? 0),
-      qty: Number(p.qty),
-      costBasisUsd: Number(p.costBasis),
-      marketValueUsd: Number(p.marketValue),
-      pnlUsd: Number(p.pnl),
-      pnlPct: Number(p.pnlPct),
-    }));
+    const raw = await publicGet<RawSpotBalances>(
+      `/accounts/${encodeURIComponent(userAddress)}/balances`,
+    );
+    const items = raw.balances ?? [];
+    if (!items.length) return MOCK_PORTFOLIO.positions;
+    const total =
+      Number(raw.totalValueUsd ?? 0) ||
+      items.reduce((s, i) => s + Number(i.valueUsd ?? 0), 0) ||
+      1;
+    return items
+      .filter((i) => Number(i.total ?? i.available ?? i.free ?? 0) > 0)
+      .map((i) => {
+        const symbol = (i.coin ?? i.asset ?? "v?").replace(/^v/, "");
+        const qty = Number(i.total ?? i.available ?? i.free ?? 0);
+        const marketValueUsd = Number(i.valueUsd ?? 0);
+        return {
+          symbol,
+          name: symbol,
+          weight: total > 0 ? marketValueUsd / total : 0,
+          qty,
+          costBasisUsd: marketValueUsd, // unknown — show flat for now
+          marketValueUsd,
+          pnlUsd: 0,
+          pnlPct: 0,
+        };
+      });
   } catch (e) {
-    console.warn("[sodex] positions fell back to mocks:", (e as Error).message);
+    console.warn("[sodex] balances fell back to mocks:", (e as Error).message);
     return MOCK_PORTFOLIO.positions;
   }
 }
 
-/** Builds a multi-leg execution plan for a basket using live orderbook data. */
+// ---------------------------------------------------------------------------
+// Build a multi-leg execution plan using live orderbook data
+// ---------------------------------------------------------------------------
+
 export async function buildExecutionPlan(args: {
   basketId: string;
   notionalUsd: number;
