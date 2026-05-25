@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Newspaper, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, Layers, Newspaper, TrendingDown, TrendingUp } from "lucide-react";
 import type { NewsItem } from "@/lib/types";
 
 interface Ticker {
   symbol: string;
   display: string;
   lastPrice: number;
+  changePct: number;
+}
+
+interface SsiMover {
+  symbol: string;
+  name: string;
   changePct: number;
 }
 
@@ -20,7 +26,7 @@ interface Ticker {
  * Auto-refreshes every 60s.
  */
 export function MarketPulse() {
-  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[] } | null>(null);
+  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[]; ssiMovers?: SsiMover[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,7 +37,7 @@ export function MarketPulse() {
         const j = await r.json();
         if (!cancelled) setData(j);
       } catch {
-        if (!cancelled) setData({ tickers: [], news: [] });
+        if (!cancelled) setData({ tickers: [], news: [], ssiMovers: [] });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -97,6 +103,38 @@ export function MarketPulse() {
             <div className="py-4 text-center text-xs text-muted-foreground">No ticker data right now.</div>
           )}
         </div>
+
+        {data && data.ssiMovers && data.ssiMovers.length > 0 && (
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <Layers className="h-3 w-3" /> SoSoValue SSI movers
+            </div>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {data.ssiMovers.map((m) => {
+                const up = m.changePct >= 0;
+                return (
+                  <div
+                    key={m.symbol}
+                    className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 px-2 py-1.5 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold">{m.symbol}</div>
+                      <div className="truncate text-[10px] text-muted-foreground">{m.name}</div>
+                    </div>
+                    <span
+                      className={`flex items-center gap-0.5 font-mono ${
+                        up ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                      }`}
+                    >
+                      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                      {(m.changePct * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
