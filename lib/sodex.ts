@@ -1,6 +1,7 @@
 // SoDEX API client.
 // Docs: https://sodex.com/documentation/api/api
 //       https://sodex.com/documentation/api/rest-v1/sodex-rest-spot-api
+//       https://sodex.com/documentation/api/rest-v1/schema
 //
 // Spot REST gateway:
 //   - Testnet: https://testnet-gw.sodex.dev/api/v1/spot
@@ -11,7 +12,7 @@
 // so we go through `toSodexSymbol()` at the API boundary.
 //
 // Authentication:
-//   - Public read endpoints (markets, orderbook, balances) are unsigned.
+//   - Public read endpoints (markets, orderbook, balances, tickers) are unsigned.
 //   - Authenticated writes (place/cancel order) use EIP-712 typed signatures.
 //     That signing pipeline is a Wave 3 deliverable — until it's wired the
 //     `placeOrder()` path short-circuits to a simulated fill so the demo
@@ -43,6 +44,9 @@ function useMocks() {
   return process.env.MOSAIC_USE_MOCKS === "true";
 }
 
+// Stablecoin set — these always price at $1 regardless of any ticker.
+const STABLES = new Set(["USDC", "USDT", "DAI", "USDE", "USDD", "FDUSD"]);
+
 // ---------------------------------------------------------------------------
 // Symbol helpers — internal "BTC/USDC" <-> SoDEX "vBTC_vUSDC"
 // ---------------------------------------------------------------------------
@@ -66,6 +70,11 @@ export function fromSodexSymbol(symbol: string): string {
   return `${base}/${quote}`;
 }
 
+/** "vUSDC" → "USDC", "vBTC" → "BTC". Pass-through if no prefix. */
+export function stripV(coin: string): string {
+  return coin.startsWith("v") ? coin.slice(1) : coin;
+}
+
 // ---------------------------------------------------------------------------
 // HTTP transport — unwraps the SoDEX response envelope and surfaces errors
 // ---------------------------------------------------------------------------
@@ -78,14 +87,21 @@ interface SodexEnvelope<T> {
 }
 
 async function publicGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${baseUrl()}${path}`, {
+  const url = `${baseUrl()}${path}`;
+  if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+    console.info(`[sodex] GET ${url}`);
+  }
+  const res = await fetch(url, {
     headers: { Accept: "application/json" },
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`SoDEX HTTP ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`SoDEX HTTP ${res.status} on ${path}: ${body.slice(0, 200)}`);
+  }
   const env = (await res.json()) as SodexEnvelope<T>;
   if (env.code !== 0) {
-    throw new Error(`SoDEX code ${env.code}: ${env.error ?? "unknown error"}`);
+    throw new Error(`SoDEX code ${env.code} on ${path}: ${env.error ?? "unknown error"}`);
   }
   return env.data;
 }
@@ -156,8 +172,6 @@ export async function listMarkets(): Promise<Market[]> {
       .filter((m) => !m.status || m.status === "TRADING")
       .map((m) => {
         const sodexSymbol = m.symbol;
-        const baseAsset = m.baseAsset ?? m.base ?? "";
-        const quoteAsset = m.quoteAsset ?? m.quote ?? "vUSDC";
         const display = fromSodexSymbol(sodexSymbol);
         const [base, quote = "USDC"] = display.split("/");
         return {
@@ -210,6 +224,87 @@ export async function getOrderbook(market: string): Promise<OrderbookSnapshot> {
     const t = MOCK_TOKENS[base];
     return mockOrderbook(market, t?.price ?? 1);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Tickers — used for USD valuation of balances
+// ---------------------------------------------------------------------------
+
+/** SoDEX SpotTicker — 24h rolling window stats. */
+interface RawSpotTicker {
+  symbol: string;
+  lastPx: string;
+  openPx?: string;
+  highPx?: string;
+  lowPx?: string;
+  changePct?: number;
+  bidPx?: string;
+  askPx?: string;
+  volume?: string;
+}
+
+export interface TickerSummary {
+  /** SoDEX wire symbol, e.g. "vBTC_vUSDC" */
+  symbol: string;
+  /** Display, e.g. "BTC/USDC" */
+  display: string;
+  base: string;
+  quote: string;
+  lastPrice: number;
+  changePct: number;
+}
+
+let TICKER_CACHE: { fetchedAt: number; rows: TickerSummary[] } | null = null;
+const TICKER_TTL_MS = 15_000;
+
+/** Pulls all tickers in one round-trip. Cached for 15s server-side. */
+export async function getAllTickers(): Promise<TickerSummary[]> {
+  if (useMocks()) return mockTickerRows();
+  if (TICKER_CACHE && Date.now() - TICKER_CACHE.fetchedAt < TICKER_TTL_MS) {
+    return TICKER_CACHE.rows;
+  }
+  try {
+    const raw = await publicGet<RawSpotTicker[]>("/markets/tickers");
+    const rows: TickerSummary[] = raw.map((t) => {
+      const display = fromSodexSymbol(t.symbol);
+      const [base, quote = "USDC"] = display.split("/");
+      return {
+        symbol: t.symbol,
+        display,
+        base,
+        quote,
+        lastPrice: Number(t.lastPx) || 0,
+        changePct: Number(t.changePct ?? 0),
+      };
+    });
+    TICKER_CACHE = { fetchedAt: Date.now(), rows };
+    return rows;
+  } catch (e) {
+    console.warn("[sodex] tickers fell back to mocks:", (e as Error).message);
+    return mockTickerRows();
+  }
+}
+
+function mockTickerRows(): TickerSummary[] {
+  return Object.entries(MOCK_TOKENS).map(([base, t]) => ({
+    symbol: toSodexSymbol(base),
+    display: `${base}/USDC`,
+    base,
+    quote: "USDC",
+    lastPrice: t.price,
+    changePct: t.momentum30d / 30, // crude daily approx
+  }));
+}
+
+/** Best USDC-denominated price for a base coin. USDC = 1. */
+export function priceOf(base: string, tickers: TickerSummary[]): number {
+  const u = base.toUpperCase();
+  if (STABLES.has(u)) return 1;
+  const exact = tickers.find((t) => t.base.toUpperCase() === u && t.quote.toUpperCase() === "USDC");
+  if (exact) return exact.lastPrice;
+  // Fallback: anything quoted in USDC
+  const any = tickers.find((t) => t.base.toUpperCase() === u);
+  return any?.lastPrice ?? 0;
 }
 
 /** Walk the orderbook to estimate VWAP fill for a USD notional. */
@@ -282,59 +377,121 @@ export async function placeOrder(input: PlaceOrderInput) {
 // Account state — SoDEX balances are a public GET keyed by EVM address
 // ---------------------------------------------------------------------------
 
-interface RawBalanceItem {
-  coin?: string;
-  asset?: string;
-  available?: string | number;
-  free?: string | number;
-  locked?: string | number;
-  total?: string | number;
-  valueUsd?: string | number;
+/** SoDEX SpotBalance per schema: { id, coin, total, locked } */
+interface RawSpotBalance {
+  id?: number;
+  coin: string;     // "vUSDC"
+  total: string;    // total balance incl. locked
+  locked?: string;
 }
 
-interface RawSpotBalances {
-  balances?: RawBalanceItem[];
-  totalValueUsd?: string | number;
+interface RawSpotAccountBalances {
+  blockTime?: number;
+  blockHeight?: number;
+  balances: RawSpotBalance[];
+}
+
+export interface BalanceRow {
+  symbol: string;        // "USDC"
+  qty: number;
+  lockedQty: number;
+  freeQty: number;
+  priceUsd: number;
+  marketValueUsd: number;
 }
 
 /**
- * Pulls real balances from SoDEX if a wallet address is provided, otherwise
- * returns the mock portfolio so the dashboard always renders for unconnected
- * visitors. Public endpoint — no signing required.
+ * Fetch raw balances for a wallet, valued in USD via the tickers endpoint.
+ * Returns [] if the request fails. USDC priced as $1; others priced via the
+ * /markets/tickers feed.
  */
-export async function getPortfolioPositions(userAddress?: string): Promise<PortfolioPosition[]> {
-  if (useMocks() || !userAddress) return MOCK_PORTFOLIO.positions;
+export async function getWalletBalances(userAddress: string): Promise<BalanceRow[]> {
+  if (!userAddress) return [];
+  if (useMocks()) {
+    return MOCK_PORTFOLIO.positions.map((p) => ({
+      symbol: p.symbol,
+      qty: p.qty,
+      lockedQty: 0,
+      freeQty: p.qty,
+      priceUsd: p.marketValueUsd / Math.max(p.qty, 1e-9),
+      marketValueUsd: p.marketValueUsd,
+    }));
+  }
   try {
-    const raw = await publicGet<RawSpotBalances>(
+    const env = await publicGet<RawSpotAccountBalances>(
       `/accounts/${encodeURIComponent(userAddress)}/balances`,
     );
-    const items = raw.balances ?? [];
-    if (!items.length) return MOCK_PORTFOLIO.positions;
-    const total =
-      Number(raw.totalValueUsd ?? 0) ||
-      items.reduce((s, i) => s + Number(i.valueUsd ?? 0), 0) ||
-      1;
-    return items
-      .filter((i) => Number(i.total ?? i.available ?? i.free ?? 0) > 0)
-      .map((i) => {
-        const symbol = (i.coin ?? i.asset ?? "v?").replace(/^v/, "");
-        const qty = Number(i.total ?? i.available ?? i.free ?? 0);
-        const marketValueUsd = Number(i.valueUsd ?? 0);
-        return {
-          symbol,
-          name: symbol,
-          weight: total > 0 ? marketValueUsd / total : 0,
-          qty,
-          costBasisUsd: marketValueUsd, // unknown — show flat for now
-          marketValueUsd,
-          pnlUsd: 0,
-          pnlPct: 0,
-        };
-      });
+    const tickers = await getAllTickers();
+    const rows: BalanceRow[] = (env.balances ?? []).map((b) => {
+      const symbol = stripV(b.coin);
+      const total = Number(b.total ?? 0);
+      const locked = Number(b.locked ?? 0);
+      const priceUsd = priceOf(symbol, tickers);
+      return {
+        symbol,
+        qty: total,
+        lockedQty: locked,
+        freeQty: Math.max(0, total - locked),
+        priceUsd,
+        marketValueUsd: total * priceUsd,
+      };
+    });
+    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+      console.info(
+        `[sodex] balances(${userAddress}) →`,
+        rows.map((r) => `${r.symbol}: ${r.qty} × $${r.priceUsd} = $${r.marketValueUsd.toFixed(2)}`).join(", "),
+      );
+    }
+    return rows;
   } catch (e) {
-    console.warn("[sodex] balances fell back to mocks:", (e as Error).message);
-    return MOCK_PORTFOLIO.positions;
+    console.warn("[sodex] getWalletBalances failed:", (e as Error).message);
+    return [];
   }
+}
+
+/**
+ * Convert wallet balances into PortfolioPosition rows ready for the
+ * dashboard. When no wallet is connected we return the mock portfolio so
+ * unconnected visitors still see something populated.
+ */
+export async function getPortfolioPositions(userAddress?: string): Promise<{
+  positions: PortfolioPosition[];
+  netValueUsd: number;
+  source: "mock" | "live";
+  walletAddress?: string;
+}> {
+  if (useMocks() || !userAddress) {
+    return {
+      positions: MOCK_PORTFOLIO.positions,
+      netValueUsd: MOCK_PORTFOLIO.netValueUsd,
+      source: "mock",
+    };
+  }
+  const rows = await getWalletBalances(userAddress);
+  if (!rows.length) {
+    return {
+      positions: MOCK_PORTFOLIO.positions,
+      netValueUsd: MOCK_PORTFOLIO.netValueUsd,
+      source: "mock",
+      walletAddress: userAddress,
+    };
+  }
+  const netValueUsd = rows.reduce((s, r) => s + r.marketValueUsd, 0);
+  const positions: PortfolioPosition[] = rows
+    .map((r) => ({
+      symbol: r.symbol,
+      name: r.symbol,
+      weight: netValueUsd > 0 ? r.marketValueUsd / netValueUsd : 0,
+      qty: r.qty,
+      costBasisUsd: r.marketValueUsd, // unknown without fill history
+      marketValueUsd: r.marketValueUsd,
+      pnlUsd: 0,
+      pnlPct: 0,
+    }))
+    // Hide pure-dust positions but keep stable coins even at low values.
+    .filter((p) => p.marketValueUsd >= 0.01 || STABLES.has(p.symbol.toUpperCase()))
+    .sort((a, b) => b.marketValueUsd - a.marketValueUsd);
+  return { positions, netValueUsd, source: "live", walletAddress: userAddress };
 }
 
 // ---------------------------------------------------------------------------

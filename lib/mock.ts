@@ -39,6 +39,28 @@ export const MOCK_TOKENS: Record<
   PENDLE: { name: "Pendle", price: 5.6, marketCap: 850_000_000, momentum30d: 0.14, sentiment: 0.4, volatility: 0.75, liquidityScore: 0.55, themes: ["defi-bluechip", "rwa"] },
   WIF: { name: "dogwifhat", price: 2.8, marketCap: 2_800_000_000, momentum30d: -0.18, sentiment: -0.1, volatility: 1.2, liquidityScore: 0.75, themes: ["memes"] },
   PEPE: { name: "Pepe", price: 0.0000088, marketCap: 3_700_000_000, momentum30d: -0.1, sentiment: 0.2, volatility: 1.4, liquidityScore: 0.85, themes: ["memes"] },
+  BONK: { name: "Bonk", price: 0.000027, marketCap: 2_100_000_000, momentum30d: 0.15, sentiment: 0.32, volatility: 1.3, liquidityScore: 0.78, themes: ["memes"] },
+  DOGE: { name: "Dogecoin", price: 0.18, marketCap: 26_000_000_000, momentum30d: 0.04, sentiment: 0.22, volatility: 0.9, liquidityScore: 0.95, themes: ["memes"] },
+  // SoDEX-native and SoSoValue ecosystem assets
+  SOSO: { name: "SoSoValue", price: 0.48, marketCap: 280_000_000, momentum30d: 0.42, sentiment: 0.75, volatility: 0.95, liquidityScore: 0.65, themes: ["defi-bluechip"] },
+  WSOSO: { name: "Wrapped SoSoValue", price: 0.48, marketCap: 90_000_000, momentum30d: 0.42, sentiment: 0.75, volatility: 0.95, liquidityScore: 0.55, themes: ["defi-bluechip"] },
+  // L1s
+  BTC: { name: "Bitcoin", price: 67_400, marketCap: 1_320_000_000_000, momentum30d: 0.06, sentiment: 0.38, volatility: 0.45, liquidityScore: 1, themes: ["defi-bluechip", "l2-scaling"] },
+  SOL: { name: "Solana", price: 162, marketCap: 75_000_000_000, momentum30d: 0.08, sentiment: 0.45, volatility: 0.7, liquidityScore: 1, themes: ["l2-scaling", "defi-bluechip"] },
+  AVAX: { name: "Avalanche", price: 38, marketCap: 14_800_000_000, momentum30d: 0.03, sentiment: 0.22, volatility: 0.68, liquidityScore: 0.85, themes: ["l2-scaling", "defi-bluechip"] },
+  // More DePIN
+  GRT: { name: "The Graph", price: 0.28, marketCap: 2_700_000_000, momentum30d: 0.08, sentiment: 0.3, volatility: 0.7, liquidityScore: 0.7, themes: ["depin", "ai-infra"] },
+  FIL: { name: "Filecoin", price: 4.9, marketCap: 2_900_000_000, momentum30d: -0.02, sentiment: 0.05, volatility: 0.7, liquidityScore: 0.75, themes: ["depin"] },
+  // More RWA
+  RIO: { name: "Realio", price: 0.42, marketCap: 95_000_000, momentum30d: 0.18, sentiment: 0.4, volatility: 0.85, liquidityScore: 0.45, themes: ["rwa"] },
+  POLYX: { name: "Polymesh", price: 0.31, marketCap: 280_000_000, momentum30d: 0.06, sentiment: 0.2, volatility: 0.72, liquidityScore: 0.5, themes: ["rwa"] },
+  // More AI-infra
+  WLD: { name: "Worldcoin", price: 5.4, marketCap: 5_700_000_000, momentum30d: 0.11, sentiment: 0.32, volatility: 0.9, liquidityScore: 0.8, themes: ["ai-infra"] },
+  // Yield / staking
+  LDO: { name: "Lido", price: 1.95, marketCap: 1_700_000_000, momentum30d: 0.04, sentiment: 0.18, volatility: 0.65, liquidityScore: 0.85, themes: ["defi-bluechip"] },
+  RPL: { name: "Rocket Pool", price: 14.2, marketCap: 290_000_000, momentum30d: -0.06, sentiment: 0.1, volatility: 0.75, liquidityScore: 0.55, themes: ["defi-bluechip"] },
+  // USDC for cash positions
+  USDC: { name: "USD Coin", price: 1, marketCap: 35_000_000_000, momentum30d: 0, sentiment: 0, volatility: 0.01, liquidityScore: 1, themes: [] },
 };
 
 export const MOCK_NEWS: NewsItem[] = [

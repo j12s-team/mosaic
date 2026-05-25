@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPct, formatUSD } from "@/lib/utils";
-import { getSession } from "@/lib/wallet";
+import { getSession, shortAddress } from "@/lib/wallet";
 import type { PortfolioSnapshot, RebalanceProposal } from "@/lib/types";
 import {
   AreaChart,
@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   CheckCheck,
   Newspaper,
+  RefreshCw,
   Sparkles,
   Wallet,
   X,
@@ -33,20 +34,36 @@ const ICONS = {
   metric: Sparkles,
 } as const;
 
+interface LivePortfolio extends PortfolioSnapshot {
+  source?: "live" | "mock";
+  walletAddress?: string;
+}
+
 export function Portfolio() {
-  const [data, setData] = useState<PortfolioSnapshot | null>(null);
+  const [data, setData] = useState<LivePortfolio | null>(null);
   const [resolved, setResolved] = useState<Record<string, "approved" | "dismissed">>({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function load() {
+    setRefreshing(true);
+    try {
+      const addr = getSession()?.address;
+      const url = addr ? `/api/portfolio?address=${encodeURIComponent(addr)}` : "/api/portfolio";
+      const res = await fetch(url, { cache: "no-store" });
+      const json = await res.json();
+      setData(json);
+    } catch {
+      setData(null);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    // If the user has connected a wallet, pass the address so the API can
-    // fetch real SoDEX balances. Without a wallet we still get the demo
-    // portfolio so the UI is never empty.
-    const addr = getSession()?.address;
-    const url = addr ? `/api/portfolio?address=${encodeURIComponent(addr)}` : "/api/portfolio";
-    fetch(url)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null));
+    load();
+    // Re-fetch every 30s so balances stay reasonably fresh.
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   if (!data) {
@@ -60,6 +77,7 @@ export function Portfolio() {
   }
 
   const proposals = data.pendingProposals.filter((p) => !resolved[p.id]);
+  const isLive = data.source === "live";
 
   return (
     <div className="space-y-4">
@@ -68,94 +86,142 @@ export function Portfolio() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-brand-600 dark:text-brand-300" />
-              Live portfolio
+              {isLive ? "Your SoDEX wallet" : "Live portfolio"}
+              <Badge variant={isLive ? "success" : "outline"} className="text-[10px]">
+                {isLive ? "live · testnet" : "demo · mocks"}
+              </Badge>
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground italic">
-              &ldquo;{data.thesisPrompt}&rdquo;
+              {isLive && data.walletAddress
+                ? `Address ${shortAddress(data.walletAddress)} — values priced from /markets/tickers.`
+                : `“${data.thesisPrompt}”`}
             </p>
           </div>
-          <div className="text-right">
-            <div className="font-mono text-2xl font-semibold">
-              {formatUSD(data.netValueUsd)}
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={load}
+                disabled={refreshing}
+                className="rounded-md border border-border/40 p-1 text-muted-foreground transition hover:bg-secondary/40 hover:text-foreground disabled:opacity-50"
+                title="Refresh balances"
+              >
+                <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+              <div className="font-mono text-2xl font-semibold">
+                {formatUSD(data.netValueUsd)}
+              </div>
             </div>
-            <Badge
-              variant={data.netPnlUsd >= 0 ? "success" : "danger"}
-              className="mt-1"
-            >
-              {data.netPnlUsd >= 0 ? "+" : ""}
-              {formatUSD(data.netPnlUsd)} ({formatPct(data.netPnlPct, { signed: true })})
-            </Badge>
+            {!isLive && (
+              <Badge
+                variant={data.netPnlUsd >= 0 ? "success" : "danger"}
+                className="mt-1"
+              >
+                {data.netPnlUsd >= 0 ? "+" : ""}
+                {formatUSD(data.netPnlUsd)} ({formatPct(data.netPnlPct, { signed: true })})
+              </Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="h-32">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.history}>
-                <defs>
-                  <linearGradient id="pv" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(49,158,255)" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="rgb(49,158,255)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="v"
-                  stroke="rgb(49,158,255)"
-                  strokeWidth={2}
-                  fill="url(#pv)"
-                />
-                <XAxis dataKey="t" hide />
-                <YAxis hide domain={["dataMin - 30", "dataMax + 30"]} />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(10,15,28,0.9)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                  formatter={(v: number) => [formatUSD(v), "Net value"]}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {!isLive && (
+            <div className="h-32">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.history}>
+                  <defs>
+                    <linearGradient id="pv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(49,158,255)" stopOpacity={0.45} />
+                      <stop offset="100%" stopColor="rgb(49,158,255)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke="rgb(49,158,255)"
+                    strokeWidth={2}
+                    fill="url(#pv)"
+                  />
+                  <XAxis dataKey="t" hide />
+                  <YAxis hide domain={["dataMin - 30", "dataMax + 30"]} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(10,15,28,0.9)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                    formatter={(v: number) => [formatUSD(v), "Net value"]}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
-          <div className="overflow-hidden rounded-lg border border-border/40">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2">Asset</th>
-                  <th className="px-3 py-2 text-right">Weight</th>
-                  <th className="px-3 py-2 text-right">Mkt value</th>
-                  <th className="px-3 py-2 text-right">PnL</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {data.positions.map((p) => (
-                  <tr key={p.symbol}>
-                    <td className="px-3 py-2">
-                      <div className="font-medium">{p.symbol}</div>
-                      <div className="text-[10px] text-muted-foreground">{p.name}</div>
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">
-                      {(p.weight * 100).toFixed(1)}%
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">
-                      {formatUSD(p.marketValueUsd)}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-right font-mono ${
-                        p.pnlUsd >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
-                      }`}
-                    >
-                      {p.pnlUsd >= 0 ? "+" : ""}
-                      {formatUSD(p.pnlUsd)} · {formatPct(p.pnlPct, { signed: true })}
-                    </td>
+          {data.positions.length === 0 ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-4 text-xs text-amber-700 dark:text-amber-200">
+              No balances detected on this SoDEX account. Visit the{" "}
+              <a
+                className="underline underline-offset-4"
+                href="https://testnet.sodex.com/faucet"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                testnet faucet
+              </a>{" "}
+              to claim USDC, then refresh.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border/40">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">Asset</th>
+                    <th className="px-3 py-2 text-right">Weight</th>
+                    <th className="px-3 py-2 text-right">Qty</th>
+                    <th className="px-3 py-2 text-right">Mkt value</th>
+                    {!isLive && <th className="px-3 py-2 text-right">PnL</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {data.positions.map((p) => (
+                    <tr key={p.symbol}>
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{p.symbol}</div>
+                        <div className="text-[10px] text-muted-foreground">{p.name}</div>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {(p.weight * 100).toFixed(1)}%
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {p.qty.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {formatUSD(p.marketValueUsd)}
+                      </td>
+                      {!isLive && (
+                        <td
+                          className={`px-3 py-2 text-right font-mono ${
+                            p.pnlUsd >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                          }`}
+                        >
+                          {p.pnlUsd >= 0 ? "+" : ""}
+                          {formatUSD(p.pnlUsd)} · {formatPct(p.pnlPct, { signed: true })}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {isLive && (
+            <div className="text-[11px] text-muted-foreground">
+              PnL tracking lights up once you execute a Mosaic basket — Wave 2 records the
+              entry fills locally so the realised-return chart in <em>My baskets</em> below
+              fills in over time.
+            </div>
+          )}
         </CardContent>
       </Card>
 
