@@ -90,38 +90,133 @@ export interface SsiIndex {
   name: string;
   description?: string;
   constituents: Array<{ symbol: string; weight: number }>;
+  /** Optional 24h change percentage for the index. */
+  changePct?: number;
+}
+
+const MOCK_SSI_LIBRARY: SsiIndex[] = [
+  {
+    symbol: "MAG7.ssi",
+    name: "MAG7 Crypto Index",
+    description: "The 7 largest crypto assets by liquidity-weighted market cap.",
+    changePct: 0.018,
+    constituents: [
+      { symbol: "BTC", weight: 0.5 },
+      { symbol: "ETH", weight: 0.25 },
+      { symbol: "SOL", weight: 0.08 },
+      { symbol: "BNB", weight: 0.06 },
+      { symbol: "XRP", weight: 0.05 },
+      { symbol: "DOGE", weight: 0.03 },
+      { symbol: "ADA", weight: 0.03 },
+    ],
+  },
+  {
+    symbol: "AI.ssi",
+    name: "AI Infrastructure SSI",
+    description: "Bittensor + Render + Fetch + Akash + IO.net + The Graph — the on-chain compute thesis.",
+    changePct: 0.034,
+    constituents: [
+      { symbol: "TAO", weight: 0.30 },
+      { symbol: "RNDR", weight: 0.22 },
+      { symbol: "FET", weight: 0.18 },
+      { symbol: "AKT", weight: 0.12 },
+      { symbol: "IO", weight: 0.10 },
+      { symbol: "GRT", weight: 0.08 },
+    ],
+  },
+  {
+    symbol: "DEFI.ssi",
+    name: "DeFi Bluechip SSI",
+    description: "Liquidity-weighted basket of top DeFi protocol tokens.",
+    changePct: -0.005,
+    constituents: [
+      { symbol: "ETH", weight: 0.30 },
+      { symbol: "UNI", weight: 0.20 },
+      { symbol: "AAVE", weight: 0.20 },
+      { symbol: "MKR", weight: 0.15 },
+      { symbol: "LDO", weight: 0.10 },
+      { symbol: "PENDLE", weight: 0.05 },
+    ],
+  },
+  {
+    symbol: "DEPIN.ssi",
+    name: "DePIN SSI",
+    description: "Decentralized physical infrastructure — bandwidth, storage, GPUs, sensors.",
+    changePct: 0.022,
+    constituents: [
+      { symbol: "RNDR", weight: 0.32 },
+      { symbol: "AKT", weight: 0.22 },
+      { symbol: "IO", weight: 0.18 },
+      { symbol: "FIL", weight: 0.15 },
+      { symbol: "HNT", weight: 0.13 },
+    ],
+  },
+  {
+    symbol: "RWA.ssi",
+    name: "RWA SSI",
+    description: "Tokenized treasuries, real estate, and yield-bearing real-world assets.",
+    changePct: 0.011,
+    constituents: [
+      { symbol: "ONDO", weight: 0.40 },
+      { symbol: "PENDLE", weight: 0.25 },
+      { symbol: "MKR", weight: 0.20 },
+      { symbol: "POLYX", weight: 0.10 },
+      { symbol: "RIO", weight: 0.05 },
+    ],
+  },
+  {
+    symbol: "MEME.ssi",
+    name: "Memecoin Top SSI",
+    description: "Aggressive: top liquidity-weighted memecoins.",
+    changePct: -0.042,
+    constituents: [
+      { symbol: "DOGE", weight: 0.40 },
+      { symbol: "PEPE", weight: 0.25 },
+      { symbol: "WIF", weight: 0.20 },
+      { symbol: "BONK", weight: 0.15 },
+    ],
+  },
+];
+
+export async function listSsiIndexes(): Promise<SsiIndex[]> {
+  if (useMocks()) return MOCK_SSI_LIBRARY;
+  try {
+    const raw = await call<{ data: { list: any[] } }>(`/api/v1/index/list`);
+    return (raw.data?.list ?? []).map((idx: any) => ({
+      symbol: idx.symbol,
+      name: idx.name ?? idx.symbol,
+      description: idx.description,
+      changePct: Number(idx.changePct ?? idx.change24h ?? 0),
+      constituents: (idx.composition ?? idx.constituents ?? []).map((c: any) => ({
+        symbol: c.symbol,
+        weight: Number(c.weight),
+      })),
+    }));
+  } catch (e) {
+    console.warn("[sosovalue] listSsiIndexes fell back to mocks:", (e as Error).message);
+    return MOCK_SSI_LIBRARY;
+  }
 }
 
 export async function getSsiIndex(symbol: string): Promise<SsiIndex | null> {
   if (useMocks()) {
-    if (symbol.toLowerCase() === "mag7.ssi") {
-      return {
-        symbol: "MAG7.ssi",
-        name: "MAG7 Crypto Index",
-        description: "The 7 largest crypto assets by liquidity-weighted market cap.",
-        constituents: [
-          { symbol: "BTC", weight: 0.5 },
-          { symbol: "ETH", weight: 0.25 },
-          { symbol: "SOL", weight: 0.08 },
-          { symbol: "BNB", weight: 0.06 },
-          { symbol: "XRP", weight: 0.05 },
-          { symbol: "DOGE", weight: 0.03 },
-          { symbol: "ADA", weight: 0.03 },
-        ],
-      };
-    }
-    return null;
+    return MOCK_SSI_LIBRARY.find((s) => s.symbol.toLowerCase() === symbol.toLowerCase()) ?? null;
   }
-  const raw = await call<{ data: any }>(`/api/v1/index/${symbol}`);
-  return {
-    symbol: raw.data.symbol,
-    name: raw.data.name,
-    description: raw.data.description,
-    constituents: (raw.data.composition ?? []).map((c: any) => ({
-      symbol: c.symbol,
-      weight: Number(c.weight),
-    })),
-  };
+  try {
+    const raw = await call<{ data: any }>(`/api/v1/index/${symbol}`);
+    return {
+      symbol: raw.data.symbol,
+      name: raw.data.name,
+      description: raw.data.description,
+      changePct: Number(raw.data.changePct ?? 0),
+      constituents: (raw.data.composition ?? []).map((c: any) => ({
+        symbol: c.symbol,
+        weight: Number(c.weight),
+      })),
+    };
+  } catch {
+    return MOCK_SSI_LIBRARY.find((s) => s.symbol.toLowerCase() === symbol.toLowerCase()) ?? null;
+  }
 }
 
 export interface TokenMetrics {

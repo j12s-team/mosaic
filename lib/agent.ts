@@ -11,13 +11,41 @@ import { z } from "zod";
 import type { Basket, RiskLevel, Theme, Thesis, TokenScore } from "./types";
 import { getCandidateUniverse, type TokenMetrics } from "./sosovalue";
 
-const THEME_KEYWORDS: Record<Theme, string[]> = {
-  "ai-infra": ["ai", "artificial intelligence", "machine learning", "compute", "gpu", "inference", "llm", "ml"],
-  depin: ["depin", "physical infrastructure", "wireless", "storage network", "compute network"],
-  "defi-bluechip": ["defi", "lending", "dex", "amm", "swap", "yield", "blue chip", "bluechip"],
-  memes: ["meme", "memecoin", "shitcoin", "degen"],
-  rwa: ["rwa", "real world", "real-world", "treasur", "bond", "tokenized stock"],
-  "l2-scaling": ["l2", "layer 2", "rollup", "scaling", "optimistic", "zk-rollup"],
+// Each keyword carries a weight; the classifier sums weights per theme so a
+// thesis like "AI infrastructure with some L2 hedge" produces a mixed basket
+// instead of a single-theme one.
+const THEME_KEYWORDS: Record<Theme, Array<[string, number]>> = {
+  "ai-infra": [
+    ["ai", 3], ["artificial intelligence", 4], ["machine learning", 3],
+    ["compute", 2], ["gpu", 3], ["inference", 3], ["llm", 3],
+    ["ml", 2], ["agent", 2], ["model", 1], ["bittensor", 4], ["tao", 4],
+  ],
+  depin: [
+    ["depin", 5], ["physical infrastructure", 4], ["wireless", 3],
+    ["storage network", 4], ["compute network", 4], ["helium", 3],
+    ["render", 2], ["akash", 3], ["filecoin", 3], ["graph", 2], ["bandwidth", 3],
+  ],
+  "defi-bluechip": [
+    ["defi", 4], ["lending", 3], ["dex", 3], ["amm", 3], ["swap", 2],
+    ["yield", 3], ["blue chip", 4], ["bluechip", 4], ["liquid staking", 4],
+    ["staking", 2], ["uniswap", 3], ["aave", 3], ["maker", 2],
+    ["lido", 3], ["safe", 1], ["conservative", 2], ["stable", 2],
+  ],
+  memes: [
+    ["meme", 5], ["memecoin", 5], ["shitcoin", 4], ["degen", 4],
+    ["pepe", 4], ["doge", 4], ["wif", 4], ["bonk", 4], ["fun", 2],
+    ["aggressive", 2], ["yolo", 4], ["gamble", 4], ["moon", 3],
+  ],
+  rwa: [
+    ["rwa", 5], ["real world", 4], ["real-world", 4], ["treasur", 3],
+    ["bond", 3], ["tokenized stock", 4], ["ondo", 4], ["pendle", 3],
+    ["t-bill", 4], ["mortgage", 3], ["fixed income", 4],
+  ],
+  "l2-scaling": [
+    ["l2", 4], ["layer 2", 4], ["rollup", 4], ["scaling", 3],
+    ["optimistic", 3], ["zk-rollup", 4], ["zk", 3], ["arbitrum", 3],
+    ["optimism", 3], ["base", 2], ["polygon", 3],
+  ],
   custom: [],
 };
 
@@ -32,17 +60,29 @@ interface AgentPlan {
 function classifyByKeywords(thesis: Thesis): AgentPlan {
   const text = thesis.prompt.toLowerCase();
   const matches: Array<{ theme: Theme; weight: number }> = [];
+  const matchedTerms: string[] = [];
   for (const [theme, kws] of Object.entries(THEME_KEYWORDS)) {
     if (theme === "custom") continue;
-    const hits = kws.reduce((n, k) => (text.includes(k) ? n + 1 : n), 0);
-    if (hits) matches.push({ theme: theme as Theme, weight: hits });
+    let weight = 0;
+    for (const [kw, w] of kws) {
+      if (text.includes(kw)) {
+        weight += w;
+        matchedTerms.push(`${kw}→${theme}`);
+      }
+    }
+    if (weight > 0) matches.push({ theme: theme as Theme, weight });
   }
   if (matches.length === 0) matches.push({ theme: "defi-bluechip", weight: 1 });
-  const sum = matches.reduce((s, m) => s + m.weight, 0);
+  // Softmax so a theme with twice the keyword weight gets dramatically more allocation.
+  const max = Math.max(...matches.map((m) => m.weight));
+  const exps = matches.map((m) => Math.exp((m.weight - max) / 2));
+  const sumExp = exps.reduce((a, b) => a + b, 0);
   return {
-    themes: matches.map((m) => ({ theme: m.theme, weight: m.weight / sum })),
+    themes: matches.map((m, i) => ({ theme: m.theme, weight: exps[i] / sumExp })),
     risk: thesis.risk,
-    notes: [`Classified by keyword match: ${matches.map((m) => m.theme).join(", ")}`],
+    notes: matchedTerms.length
+      ? [`Matched keywords: ${matchedTerms.slice(0, 6).join(", ")}`]
+      : ["No theme keywords matched — defaulted to DeFi blue-chips"],
   };
 }
 
