@@ -40,20 +40,29 @@ export function MyBaskets() {
   }, []);
 
   useEffect(() => {
-    refresh();
-    // Auto-refresh when ExecutionPreview saves a new basket: it dispatches a
-    // window event we listen for so the newly-executed basket appears here
-    // immediately, without a page refresh.
+    const rows = listBaskets(owner);
+    setBaskets(rows);
+    // Default behaviour: expand the most recently saved basket so users
+    // immediately see the fills without having to click. Older baskets stay
+    // collapsed to keep the panel scannable.
+    if (rows[0]) {
+      setExpanded((prev) => ({ ...prev, [rows[0].basket.id]: prev[rows[0].basket.id] ?? true }));
+    }
+
+    // Live refresh when ExecutionPreview saves a new basket: it dispatches a
+    // window event so the newly-executed basket appears here immediately,
+    // auto-expanded and scrolled into view, with no page refresh.
     const onSaved = (e: Event) => {
-      refresh();
+      const rows2 = listBaskets(owner);
+      setBaskets(rows2);
       const detail = (e as CustomEvent).detail as { basketId?: string } | undefined;
-      if (detail?.basketId) {
-        setExpanded((prev) => ({ ...prev, [detail.basketId!]: true }));
-        // Scroll the new basket card into view shortly after render.
+      const targetId = detail?.basketId ?? rows2[0]?.basket.id;
+      if (targetId) {
+        setExpanded((prev) => ({ ...prev, [targetId]: true }));
         setTimeout(() => {
-          const el = document.getElementById(`basket-${detail.basketId}`);
+          const el = document.getElementById(`basket-${targetId}`);
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 100);
+        }, 120);
       }
     };
     window.addEventListener("mosaic:basket-executed", onSaved);
@@ -132,6 +141,21 @@ export function MyBaskets() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm leading-snug">&ldquo;{b.basket.thesis.prompt}&rdquo;</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {b.execution.fills.slice(0, 6).map((f) => (
+                      <span
+                        key={f.symbol}
+                        className="rounded-md border border-border/40 bg-card/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                      >
+                        {f.symbol} <span className="text-foreground">{(f.weight * 100).toFixed(0)}%</span>
+                      </span>
+                    ))}
+                    {b.execution.fills.length > 6 && (
+                      <span className="rounded-md border border-border/40 bg-card/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        +{b.execution.fills.length - 6} more
+                      </span>
+                    )}
+                  </div>
                 </button>
                 <div className="text-right">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
