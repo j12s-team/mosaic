@@ -1,38 +1,58 @@
 import { NextResponse } from "next/server";
-import { getAllTickers } from "@/lib/sodex";
-import { getFeaturedNews, listSsiIndexes } from "@/lib/sosovalue";
+import { getFeaturedNews, getLivePrices, listSsiIndexes } from "@/lib/sosovalue";
 
 /**
  * GET /api/market-pulse
  *
- * Combines:
- *  - SoDEX tickers (filtered to plausible 24h moves to drop testnet glitches)
- *  - latest featured news from SoSoValue
- *  - top SSI index movers
+ * Cross-API integration tile. Mixes:
+ *  - live spot prices for a curated set of majors (SoSoValue token metrics)
+ *  - top SSI indices ranked by 24h move (SoSoValue SSI list)
+ *  - latest featured news (SoSoValue news)
  *
- * Used by the MarketPulse dashboard widget to show that the app is actually
- * pulling from both APIs in real time.
+ * SoDEX testnet tickers are intentionally NOT used as the price source here
+ * — testnet prints synthetic prices (SOL @ $140 etc.) that confused users.
+ * Real spot prices come from SoSoValue; SoDEX is the execution venue, not
+ * the quote source.
  */
+const MAJORS = [
+  "BTC",
+  "ETH",
+  "SOL",
+  "BNB",
+  "XRP",
+  "DOGE",
+  "ADA",
+  "AVAX",
+  "TAO",
+  "WLD",
+  "LDO",
+  "ONDO",
+  "RNDR",
+  "FET",
+  "IO",
+  "PEPE",
+  "WIF",
+  "FIL",
+];
+
 export async function GET() {
-  const [tickersRaw, news, ssi] = await Promise.all([
-    getAllTickers().catch(() => []),
+  const [prices, news, ssi] = await Promise.all([
+    getLivePrices(MAJORS).catch(() => []),
     getFeaturedNews({ pageSize: 6 }).catch(() => []),
     listSsiIndexes().catch(() => []),
   ]);
 
-  // Keep USDC pairs only and drop obviously broken testnet ticks (anything
-  // outside ±50% in a day on majors is wrong, not a real move). Then sort by
-  // absolute move and slice the top 8.
-  const tickers = tickersRaw
-    .filter((t) => t.quote.toUpperCase() === "USDC" && t.lastPrice > 0)
-    .filter((t) => Math.abs(t.changePct) < 0.5)
-    .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+  // Movers — sort by absolute 24h move, take the top 8.
+  const tickers = prices
+    .filter((p) => p.price > 0)
+    .sort((a, b) => Math.abs(b.changePct24h) - Math.abs(a.changePct24h))
     .slice(0, 8)
-    .map((t) => ({
-      symbol: t.base,
-      display: t.display,
-      lastPrice: t.lastPrice,
-      changePct: t.changePct,
+    .map((p) => ({
+      symbol: p.symbol,
+      display: `${p.symbol}/USDC`,
+      lastPrice: p.price,
+      changePct: p.changePct24h,
+      source: p.source,
     }));
 
   // SSI movers — sort by absolute change, keep top 4.
@@ -50,6 +70,7 @@ export async function GET() {
     tickers,
     ssiMovers,
     news: news.slice(0, 5),
+    priceSource: "SoSoValue token metrics",
     fetchedAt: new Date().toISOString(),
   });
 }

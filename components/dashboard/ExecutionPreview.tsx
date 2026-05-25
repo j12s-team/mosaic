@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatUSD } from "@/lib/utils";
 import type { Basket, ExecutionPlan } from "@/lib/types";
-import { CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
+import { ArrowDown, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
 import { getSession } from "@/lib/wallet";
 import { HOUSE_OWNER, saveBasket, appendSnapshot } from "@/lib/storage";
 
@@ -67,6 +67,22 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
 
     setStage("done");
     onExecuted?.();
+    // Tell MyBaskets (and any other listener) that a new basket just landed
+    // — it will refresh its list, expand the new card, and scroll it into
+    // view so the user can actually see what was executed.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("mosaic:basket-executed", {
+          detail: { basketId: basket.id },
+        }),
+      );
+    }
+  }
+
+  function jumpToBasket() {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById(`basket-${basket.id}`) ?? document.getElementById("saved-baskets");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   return (
@@ -169,9 +185,25 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         )}
 
         {stage === "done" && (
-          <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
-            Basket executed. View it in the portfolio panel below.
+          <div className="space-y-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-700 dark:text-emerald-300" />
+              <div className="space-y-1">
+                <p className="font-medium">
+                  Basket executed · {plan.legs.length} legs routed to SoDEX{" "}
+                  {process.env.NEXT_PUBLIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Mosaic recorded the {formatUSD(plan.totalNotionalUsd)} entry locally and is now
+                  snapshotting realised PnL. The basket card just opened below — expand it to see
+                  every fill price and weight, plus the thesis-vs-realised curve as it fills in.
+                </p>
+              </div>
+            </div>
+            <Button size="sm" variant="secondary" onClick={jumpToBasket} className="w-full">
+              <ArrowDown className="h-3.5 w-3.5" />
+              Jump to my basket
+            </Button>
           </div>
         )}
       </CardContent>
