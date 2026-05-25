@@ -12,7 +12,7 @@ import {
   type SavedBasket,
 } from "@/lib/storage";
 import { seedHouseBasketsIfNeeded } from "@/lib/houseBaskets";
-import { Bookmark, Sparkles } from "lucide-react";
+import { Bookmark, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -25,6 +25,11 @@ import {
 export function MyBaskets() {
   const [owner, setOwner] = useState<string>(HOUSE_OWNER);
   const [baskets, setBaskets] = useState<SavedBasket[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  function refresh() {
+    setBaskets(listBaskets(owner));
+  }
 
   useEffect(() => {
     // Seed the house namespace with 3 demo baskets + 7d snapshot history
@@ -35,12 +40,29 @@ export function MyBaskets() {
   }, []);
 
   useEffect(() => {
-    setBaskets(listBaskets(owner));
+    refresh();
+    // Auto-refresh when ExecutionPreview saves a new basket: it dispatches a
+    // window event we listen for so the newly-executed basket appears here
+    // immediately, without a page refresh.
+    const onSaved = (e: Event) => {
+      refresh();
+      const detail = (e as CustomEvent).detail as { basketId?: string } | undefined;
+      if (detail?.basketId) {
+        setExpanded((prev) => ({ ...prev, [detail.basketId!]: true }));
+        // Scroll the new basket card into view shortly after render.
+        setTimeout(() => {
+          const el = document.getElementById(`basket-${detail.basketId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      }
+    };
+    window.addEventListener("mosaic:basket-executed", onSaved);
+    return () => window.removeEventListener("mosaic:basket-executed", onSaved);
   }, [owner]);
 
   if (baskets.length === 0) {
     return (
-      <Card>
+      <Card id="saved-baskets">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bookmark className="h-4 w-4 text-brand-600 dark:text-brand-300" />
@@ -65,25 +87,40 @@ export function MyBaskets() {
   }
 
   return (
-    <Card>
+    <Card id="saved-baskets">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bookmark className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           Your saved baskets ({baskets.length})
         </CardTitle>
         <p className="mt-1 text-xs text-muted-foreground">
-          Thesis vs realised return tracked since the moment you executed.
+          Thesis, fills, and realised return — tracked since the moment you executed. Click a
+          basket to expand the per-leg fills Mosaic routed through SoDEX.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {baskets.map((b) => {
           const pvr = predictedVsRealised(owner, b.basket.id);
           const realised = pvr?.realisedReturnPct ?? 0;
+          const isOpen = expanded[b.basket.id] ?? false;
           return (
-            <div key={b.basket.id} className="rounded-xl border border-border/40 bg-secondary/30 dark:bg-background/40 p-4">
+            <div
+              key={b.basket.id}
+              id={`basket-${b.basket.id}`}
+              className="rounded-xl border border-border/40 bg-secondary/30 dark:bg-background/40 p-4"
+            >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <button
+                  type="button"
+                  onClick={() => setExpanded((p) => ({ ...p, [b.basket.id]: !isOpen }))}
+                  className="-m-1 flex-1 rounded p-1 text-left transition hover:bg-white/5"
+                >
                   <div className="flex items-center gap-2">
+                    {isOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                     <Badge variant={b.status === "active" ? "success" : "outline"}>
                       {b.status}
                     </Badge>
@@ -95,7 +132,7 @@ export function MyBaskets() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm leading-snug">&ldquo;{b.basket.thesis.prompt}&rdquo;</p>
-                </div>
+                </button>
                 <div className="text-right">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     Realised
@@ -112,6 +149,48 @@ export function MyBaskets() {
                   </div>
                 </div>
               </div>
+
+              {isOpen && (
+                <div className="mt-4 rounded-lg border border-border/40 bg-background/40 dark:bg-background/60">
+                  <div className="flex items-center justify-between border-b border-border/40 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <span>Executed fills · {new Date(b.execution.executedAt).toLocaleString()}</span>
+                    <span>{formatUSD(b.execution.notionalUsd)} total</span>
+                  </div>
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">Asset</th>
+                        <th className="px-3 py-2 text-right">Weight</th>
+                        <th className="px-3 py-2 text-right">Fill price</th>
+                        <th className="px-3 py-2 text-right">Notional</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {b.execution.fills.map((f) => (
+                        <tr key={f.symbol}>
+                          <td className="px-3 py-2 font-medium">{f.symbol}</td>
+                          <td className="px-3 py-2 text-right font-mono">
+                            {(f.weight * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono">
+                            {f.price > 0
+                              ? f.price < 1
+                                ? `$${f.price.toFixed(4)}`
+                                : `$${f.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono">
+                            {formatUSD(b.execution.notionalUsd * f.weight)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="border-t border-border/40 px-3 py-2 text-[10px] text-muted-foreground">
+                    Fills recorded locally · realised PnL tracked from these entry prices.
+                  </div>
+                </div>
+              )}
 
               {pvr && pvr.realisedSeries.length > 1 && (
                 <div className="mt-3 h-16">

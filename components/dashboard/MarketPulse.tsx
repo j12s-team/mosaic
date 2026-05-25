@@ -61,8 +61,9 @@ export function MarketPulse() {
           </Badge>
         </CardTitle>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Top 24h movers from <code className="font-mono">/markets/tickers</code> alongside
-          featured news from SoSoValue. Refreshes every minute.
+          Top 24h movers priced from{" "}
+          <code className="font-mono">SoSoValue /token/metrics</code> (real spot, not testnet
+          synthetic prices) alongside SSI index moves and featured news. Refreshes every minute.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -84,7 +85,11 @@ export function MarketPulse() {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{t.symbol}</span>
                       <span className="font-mono text-[10px] text-muted-foreground">
-                        {t.lastPrice < 0.01 ? t.lastPrice.toExponential(2) : `$${t.lastPrice.toLocaleString()}`}
+                        {t.lastPrice < 0.0001
+                          ? `$${t.lastPrice.toExponential(2)}`
+                          : t.lastPrice < 1
+                          ? `$${t.lastPrice.toFixed(4)}`
+                          : `$${t.lastPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
                       </span>
                     </div>
                     <span

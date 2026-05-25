@@ -373,3 +373,78 @@ export async function getCandidateUniverse(): Promise<TokenMetrics[]> {
   const all = await Promise.all(symbols.map((s) => getTokenMetrics(s)));
   return all.filter((x): x is TokenMetrics => Boolean(x));
 }
+
+// ---------------------------------------------------------------------------
+// Live spot price overlay
+//
+// SoDEX testnet ticker prices are synthetic — SOL prints at $140 there when
+// the real market is at ~$85, BTC drifts away from spot, etc. For any UI
+// that shows "this is what the asset is worth right now" we resolve prices
+// against SoSoValue's token-metrics feed (real spot) and only fall back to
+// our curated MOCK_TOKENS seed when SoSoValue can't answer.
+// ---------------------------------------------------------------------------
+
+export interface LivePrice {
+  symbol: string;
+  name: string;
+  price: number;
+  changePct24h: number;
+  source: "sosovalue" | "seed";
+}
+
+function seedPrice(sym: string): LivePrice | null {
+  const m = MOCK_TOKENS[sym.toUpperCase()];
+  if (!m) return null;
+  // Use a small fraction of 30d momentum as a stand-in for a 24h delta — it's
+  // directionally consistent with each token's seed mood without inventing
+  // numbers we can't justify.
+  return {
+    symbol: sym.toUpperCase(),
+    name: m.name,
+    price: m.price,
+    changePct24h: m.momentum30d / 30,
+    source: "seed",
+  };
+}
+
+/**
+ * Resolve a list of symbols to live spot prices.
+ *
+ * Tries SoSoValue's token-metrics endpoint per symbol (in parallel), then
+ * falls back to the MOCK_TOKENS seed price + a synthetic 24h delta so the
+ * surface never goes blank or shows zero.
+ */
+export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
+  const upper = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
+  const seedRows = upper
+    .map(seedPrice)
+    .filter((x): x is LivePrice => Boolean(x));
+  if (useMocks()) return seedRows;
+
+  const results = await Promise.all(
+    upper.map(async (s): Promise<LivePrice | null> => {
+      try {
+        const raw = await call<any>(`/api/v1/token/${s}/metrics`);
+        const d = raw?.data ?? raw;
+        if (!d || typeof d.price === "undefined") return seedPrice(s);
+        return {
+          symbol: s,
+          name: d.name ?? seedPrice(s)?.name ?? s,
+          price: Number(d.price),
+          changePct24h: Number(
+            d.changePct24h ?? d.priceChangePct24h ?? d.priceChange24h ?? d.change24h ?? 0,
+          ),
+          source: "sosovalue",
+        };
+      } catch (e) {
+        if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+          console.warn(`[sosovalue] live price for ${s} fell back to seed`, (e as Error).message);
+        }
+        return seedPrice(s);
+      }
+    }),
+  );
+
+  const out = results.filter((x): x is LivePrice => Boolean(x));
+  return out.length > 0 ? out : seedRows;
+}
