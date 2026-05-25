@@ -45,26 +45,81 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Normalize an unknown news item from any SoSoValue endpoint into our
+ * NewsItem shape. We accept many field-name variants because the docs and
+ * production responses diverge.
+ */
+function normalizeNewsItem(it: any): NewsItem | null {
+  if (!it || !(it.title || it.headline || it.name)) return null;
+  return {
+    id: String(it.id ?? it.newsId ?? it.uid ?? it.url ?? Math.random()),
+    title: it.title ?? it.headline ?? it.name,
+    summary: it.summary ?? it.description ?? it.content ?? it.brief ?? "",
+    source: it.source ?? it.mediaName ?? it.publisher ?? "SoSoValue",
+    publishedAt: it.publishTime ?? it.publishedAt ?? it.createTime ?? it.timestamp ?? new Date().toISOString(),
+    sentiment: typeof it.sentiment === "number" ? it.sentiment : undefined,
+    tickers: it.relatedTickers ?? it.currencies ?? it.tokens ?? it.tags ?? [],
+    url: it.url ?? it.link,
+  };
+}
+
+/**
+ * Try multiple known SoSoValue news endpoints until one returns rows.
+ * Falls back to MOCK_NEWS if every endpoint fails — that's deliberate so
+ * the dashboard never shows an empty news feed.
+ */
 export async function getFeaturedNews(opts: { currency?: string; pageSize?: number } = {}): Promise<NewsItem[]> {
-  if (useMocks()) {
-    return opts.currency
-      ? MOCK_NEWS.filter((n) => n.tickers?.includes(opts.currency!.toUpperCase()))
-      : MOCK_NEWS;
+  const fallback = opts.currency
+    ? MOCK_NEWS.filter((n) => n.tickers?.includes(opts.currency!.toUpperCase()))
+    : MOCK_NEWS;
+  if (useMocks()) return fallback;
+
+  const pageSize = opts.pageSize ?? 10;
+  // Different SoSoValue API versions / tenants expose news at different
+  // paths. We try each in order and use the first that returns a non-empty
+  // list. Each call is wrapped so one bad endpoint doesn't kill the chain.
+  const candidates: Array<{ path: string; pick: (r: any) => any[] }> = [
+    {
+      path: `/api/v1/news/featured/currency?${new URLSearchParams({
+        ...(opts.currency ? { currency: opts.currency } : {}),
+        pageSize: String(pageSize),
+      })}`,
+      pick: (r) => r?.data?.list ?? r?.data?.items ?? [],
+    },
+    {
+      path: `/api/v1/news/list?${new URLSearchParams({ pageSize: String(pageSize) })}`,
+      pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.data ?? [],
+    },
+    {
+      path: `/openapi/v2/news/list?${new URLSearchParams({ pageSize: String(pageSize) })}`,
+      pick: (r) => r?.data?.list ?? r?.data ?? [],
+    },
+    {
+      path: `/api/v1/news/featured?${new URLSearchParams({ pageSize: String(pageSize) })}`,
+      pick: (r) => r?.data?.list ?? r?.data ?? [],
+    },
+  ];
+
+  for (const c of candidates) {
+    try {
+      const raw = await call<any>(c.path);
+      const rows = c.pick(raw) ?? [];
+      const items = rows
+        .map(normalizeNewsItem)
+        .filter((n: NewsItem | null): n is NewsItem => Boolean(n));
+      if (items.length > 0) return items.slice(0, pageSize);
+    } catch (e) {
+      // Try the next candidate path.
+      if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+        console.warn(`[sosovalue] news endpoint failed: ${c.path}`, (e as Error).message);
+      }
+    }
   }
-  const params = new URLSearchParams();
-  if (opts.currency) params.set("currency", opts.currency);
-  params.set("pageSize", String(opts.pageSize ?? 10));
-  const raw = await call<{ data: { list: any[] } }>(`/api/v1/news/featured/currency?${params}`);
-  return raw.data.list.map((it: any) => ({
-    id: String(it.id ?? it.newsId),
-    title: it.title,
-    summary: it.summary ?? it.description ?? "",
-    source: it.source ?? "SoSoValue",
-    publishedAt: it.publishTime ?? it.publishedAt,
-    sentiment: it.sentiment,
-    tickers: it.relatedTickers ?? it.currencies,
-    url: it.url,
-  }));
+
+  // Every live path failed — return curated mocks so the dashboard isn't empty.
+  console.warn("[sosovalue] all news endpoints failed, serving curated MOCK_NEWS");
+  return fallback;
 }
 
 export async function getEtfFlows(asset: string): Promise<FlowDatum[]> {
@@ -231,28 +286,48 @@ export interface TokenMetrics {
   themes: string[];
 }
 
+function mockMetricsFor(sym: string): TokenMetrics | null {
+  const m = MOCK_TOKENS[sym];
+  if (!m) return null;
+  return { symbol: sym, ...m };
+}
+
+/**
+ * Token-level metrics for the agent's scoring step.
+ *
+ * Strategy: try the live SoSoValue endpoint, but ALWAYS fall back to our
+ * curated MOCK_TOKENS row when (a) the endpoint shape doesn't match, (b) the
+ * token isn't in the SoSoValue universe, or (c) the request errors. Without
+ * this fallback the SSI basket builder produces 0 constituents whenever the
+ * SoSoValue token API differs from our parser — which is exactly what the
+ * user hit.
+ */
 export async function getTokenMetrics(symbol: string): Promise<TokenMetrics | null> {
   const sym = symbol.toUpperCase();
-  if (useMocks()) {
-    const m = MOCK_TOKENS[sym];
-    if (!m) return null;
-    return { symbol: sym, ...m };
-  }
+  const fallback = mockMetricsFor(sym);
+  if (useMocks()) return fallback;
   try {
     const raw = await call<{ data: any }>(`/api/v1/token/${sym}/metrics`);
+    const d = raw?.data;
+    if (!d || (typeof d.price === "undefined" && typeof d.marketCap === "undefined")) {
+      return fallback;
+    }
     return {
       symbol: sym,
-      name: raw.data.name,
-      price: Number(raw.data.price),
-      marketCap: Number(raw.data.marketCap),
-      momentum30d: Number(raw.data.momentum30d ?? 0),
-      sentiment: Number(raw.data.sentiment ?? 0),
-      volatility: Number(raw.data.volatility ?? 0.5),
-      liquidityScore: Number(raw.data.liquidityScore ?? 0.5),
-      themes: raw.data.themes ?? [],
+      name: d.name ?? fallback?.name ?? sym,
+      price: Number(d.price ?? fallback?.price ?? 0),
+      marketCap: Number(d.marketCap ?? fallback?.marketCap ?? 0),
+      momentum30d: Number(d.momentum30d ?? d.priceChangePct30d ?? fallback?.momentum30d ?? 0),
+      sentiment: Number(d.sentiment ?? fallback?.sentiment ?? 0),
+      volatility: Number(d.volatility ?? fallback?.volatility ?? 0.5),
+      liquidityScore: Number(d.liquidityScore ?? fallback?.liquidityScore ?? 0.5),
+      themes: (d.themes ?? fallback?.themes ?? []) as string[],
     };
-  } catch {
-    return null;
+  } catch (e) {
+    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+      console.warn(`[sosovalue] getTokenMetrics(${sym}) fell back:`, (e as Error).message);
+    }
+    return fallback;
   }
 }
 

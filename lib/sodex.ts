@@ -268,13 +268,26 @@ export async function getAllTickers(): Promise<TickerSummary[]> {
     const rows: TickerSummary[] = raw.map((t) => {
       const display = fromSodexSymbol(t.symbol);
       const [base, quote = "USDC"] = display.split("/");
+      const lastPrice = Number(t.lastPx) || 0;
+      const openPrice = Number(t.openPx) || 0;
+      // SoDEX `changePct` units vary between testnet builds — compute the 24h
+      // change ourselves from openPx/lastPx so we always know it's a fraction
+      // (e.g. 0.0247 = +2.47%). Falls back to the API field only if open is
+      // missing or zero.
+      let changePct = 0;
+      if (openPrice > 0 && lastPrice > 0) {
+        changePct = (lastPrice - openPrice) / openPrice;
+      } else if (typeof t.changePct === "number" && Math.abs(t.changePct) < 5) {
+        // Trust the API field only when it looks like a reasonable fraction.
+        changePct = t.changePct;
+      }
       return {
         symbol: t.symbol,
         display,
         base,
         quote,
-        lastPrice: Number(t.lastPx) || 0,
-        changePct: Number(t.changePct ?? 0),
+        lastPrice,
+        changePct,
       };
     });
     TICKER_CACHE = { fetchedAt: Date.now(), rows };
