@@ -217,7 +217,7 @@ export function Portfolio() {
 
           {isLive && (
             <div className="text-[11px] text-muted-foreground">
-              PnL tracking lights up once you execute a Mosaic basket — Wave 2 records the
+              PnL tracking lights up once you execute a Mosaic basket — Mosaic records the
               entry fills locally so the realised-return chart in <em>My baskets</em> below
               fills in over time.
             </div>

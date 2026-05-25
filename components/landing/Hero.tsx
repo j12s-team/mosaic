@@ -12,7 +12,7 @@ export function Hero() {
       <div className="relative mx-auto flex max-w-7xl flex-col items-center px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-20">
         <Badge variant="brand" className="mb-6 backdrop-blur">
           <Sparkles className="h-3 w-3" />
-          <span className="font-mono text-[11px]">SoSoValue × SoDEX × Agentic AI</span>
+          <span className="font-mono text-[11px]">SoSoValue · SoDEX · SSI · Agentic AI</span>
         </Badge>
 
         <h1 className="max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-7xl">
@@ -23,9 +23,9 @@ export function Hero() {
         </h1>
 
         <p className="mt-6 max-w-2xl text-balance text-lg text-muted-foreground md:text-xl">
-          Describe a thesis in plain English. Mosaic uses SoSoValue&apos;s index, news and flow data
-          to build a thematic on-chain portfolio, executes it through SoDEX&apos;s orderbook, and
-          proposes rebalances when the data shifts — with you in the confirm loop.
+          Describe a thesis in plain English. Mosaic reads SoSoValue&apos;s news, ETF flows and SSI
+          indices to assemble a thematic on-chain basket, routes it through SoDEX&apos;s orderbook,
+          then keeps watching the data and proposes rebalances — with you in the confirm loop.
         </p>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -42,12 +42,20 @@ export function Hero() {
           </Link>
         </div>
 
-        <div className="mt-16 grid w-full max-w-4xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
+        <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Live on SoDEX testnet · mainnet read-only · no seed required
+        </div>
+
+        <div className="mt-14 grid w-full max-w-4xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
           {[
-            { k: "Data sources", v: "SoSoValue news, flows, SSI, metrics" },
-            { k: "Execution", v: "SoDEX orderbook (testnet + main)" },
+            { k: "Data", v: "SoSoValue news · flows · SSI · metrics" },
+            { k: "Execution", v: "SoDEX spot orderbook" },
             { k: "Agent loop", v: "Detect → Propose → Confirm" },
-            { k: "Built for", v: "Wave 1 — May 12, 2026" },
+            { k: "Status", v: "Live · continuously shipping" },
           ].map((s) => (
             <div
               key={s.k}

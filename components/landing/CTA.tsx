@@ -14,24 +14,29 @@ export function CTA() {
             <span className="text-gradient-brand">Architect it.</span>
           </h2>
           <p className="relative mx-auto mt-5 max-w-xl text-muted-foreground">
-            Tell Mosaic your thesis. Watch the agent build, execute, and maintain it on-chain.
+            Tell Mosaic your thesis. Watch the agent build, execute, and maintain it on-chain — no
+            spreadsheet, no Discord-tab-roulette, no quant desk required.
           </p>
           <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/app">
               <Button size="lg" className="group">
-                Try the live prototype
+                Launch the agent
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </Link>
             <a
-              href="https://app.akindo.io/wave-hacks/JBEQXgN4Zi2jA3wA?tab=overview"
+              href="https://github.com/j12s-team/mosaic"
               target="_blank"
+              rel="noopener noreferrer"
             >
               <Button size="lg" variant="secondary">
-                Buildathon submission
+                View on GitHub
               </Button>
             </a>
           </div>
+          <p className="relative mt-6 text-xs text-muted-foreground">
+            Open source · MIT licensed · shipped continuously, not at hackathon deadlines
+          </p>
         </div>
       </div>
     </section>
