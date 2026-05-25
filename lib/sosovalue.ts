@@ -122,22 +122,57 @@ export async function getFeaturedNews(opts: { currency?: string; pageSize?: numb
   return fallback;
 }
 
+/**
+ * ETF flow history — same defensive pattern as news: try multiple known
+ * endpoints, accept multiple field names, always fall back to MOCK_FLOWS so
+ * the landing page never shows +$0.
+ */
 export async function getEtfFlows(asset: string): Promise<FlowDatum[]> {
-  if (useMocks()) {
-    return MOCK_FLOWS.map((f) => ({ ...f, symbol: asset.toUpperCase() }));
+  const upper = asset.toUpperCase();
+  const fallback = MOCK_FLOWS.map((f) => ({ ...f, symbol: upper }));
+  if (useMocks()) return fallback;
+
+  const candidates: Array<{ path: string; pick: (r: any) => any[] }> = [
+    {
+      path: `/api/v1/etf/spot/${asset.toLowerCase()}/flow`,
+      pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.data ?? [],
+    },
+    {
+      path: `/api/v1/etf/spot/${asset.toLowerCase()}/historical`,
+      pick: (r) => r?.data?.list ?? r?.data ?? [],
+    },
+    {
+      path: `/openapi/v2/etf/currentEtfDataMetrics?type=${asset.toLowerCase()}`,
+      pick: (r) => r?.data?.list ?? [],
+    },
+  ];
+
+  for (const c of candidates) {
+    try {
+      const raw = await call<any>(c.path);
+      const rows = c.pick(raw) ?? [];
+      if (!Array.isArray(rows) || rows.length === 0) continue;
+      let cum = 0;
+      const out: FlowDatum[] = rows.map((it: any) => {
+        const inflow = Number(it.netInflow ?? it.netFlow ?? it.totalNetInflow ?? it.dailyNetInflow ?? 0);
+        cum += inflow;
+        return {
+          symbol: upper,
+          date: it.date ?? it.tradingDay ?? it.timestamp ?? "",
+          netInflowUsd: inflow,
+          cumulativeUsd: cum,
+        };
+      });
+      if (out.some((f) => f.netInflowUsd !== 0)) return out;
+    } catch (e) {
+      if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+        console.warn(`[sosovalue] etf flow endpoint failed: ${c.path}`, (e as Error).message);
+      }
+    }
   }
-  const raw = await call<{ data: { list: any[] } }>(`/api/v1/etf/spot/${asset.toLowerCase()}/flow`);
-  let cum = 0;
-  return raw.data.list.map((it: any) => {
-    const inflow = Number(it.netInflow ?? it.netFlow ?? 0);
-    cum += inflow;
-    return {
-      symbol: asset.toUpperCase(),
-      date: it.date,
-      netInflowUsd: inflow,
-      cumulativeUsd: cum,
-    };
-  });
+
+  console.warn(`[sosovalue] all ETF flow endpoints failed for ${upper}, serving MOCK_FLOWS`);
+  return fallback;
 }
 
 export interface SsiIndex {

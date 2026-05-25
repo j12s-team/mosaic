@@ -138,7 +138,7 @@ export function OnboardingChecklist() {
             done={state.basketExecuted}
             icon={Rocket}
             title="Route to SoDEX"
-            help="Approve the IOC limit plan. Wave 2 simulates fills; Wave 3 will sign EIP-712 typed messages to land real orders on the SoDEX testnet orderbook."
+            help="Approve the IOC limit plan. Mosaic currently simulates the fills locally; EIP-712 signing to land real orders on the SoDEX testnet orderbook is the next milestone on the roadmap."
           />
         </ol>
         {allDone && (

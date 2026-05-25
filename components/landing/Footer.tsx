@@ -12,7 +12,7 @@ export function Footer() {
           <div>
             <div className="font-semibold">Mosaic</div>
             <div className="text-xs text-muted-foreground">
-              Agentic on-chain index manager · SoSoValue Buildathon Wave 1
+              Agentic on-chain index manager · powered by SoSoValue + SoDEX
             </div>
           </div>
         </div>
@@ -30,7 +30,7 @@ export function Footer() {
             Discord
           </a>
           <a href="https://app.akindo.io/wave-hacks" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-            Akindo wave-hacks
+            Akindo
           </a>
           <Link href="/#how" className="text-muted-foreground hover:text-foreground">
             How it works
@@ -50,7 +50,7 @@ export function Footer() {
               <Github className="h-3.5 w-3.5" />
               Rivaldo
             </a>{" "}
-            for the SoSoValue Buildathon · MIT licensed
+            · open source, continuously shipping · MIT licensed
           </div>
           <div className="font-mono text-[11px]">
             © {new Date().getFullYear()} Mosaic

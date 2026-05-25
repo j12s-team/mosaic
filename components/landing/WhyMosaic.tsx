@@ -33,13 +33,14 @@ export function WhyMosaic() {
     <section id="why" className="relative mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
         <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
-          Built for the rubric
+          What you get
         </p>
         <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
-          Mapped to every judging criterion.
+          Built to be the front door for thematic on-chain investing.
         </h2>
         <p className="mt-4 text-balance text-muted-foreground">
-          Wave 1 is about direction, integration depth, and a working flow. Mosaic ships all three.
+          Direction, integration depth, and a working flow — shipped today, then sharpened every
+          week as SoSoValue, SSI and SoDEX keep growing.
         </p>
       </div>
 
