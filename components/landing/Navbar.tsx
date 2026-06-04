@@ -42,7 +42,7 @@ export function Navbar() {
             Status
           </Link>
           <Link
-            href="https://github.com/janneh2000/mosaic"
+            href="https://github.com/j12s-team/mosaic"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden text-sm text-muted-foreground hover:text-foreground lg:inline-block"

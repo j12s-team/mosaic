@@ -43,7 +43,7 @@
 
 ## Public GitHub Repository
 
-- Repo: **https://github.com/janneh2000/mosaic**
+- Repo: **https://github.com/j12s-team/mosaic**
 - README with full setup, architecture, judging-criteria mapping, env vars: `README.md`
 - Demo video script: `DEMO_SCRIPT.md`
 
