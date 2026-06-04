@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPct, formatUSD } from "@/lib/utils";
 import { InfoHint } from "@/components/ui/info-hint";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSession, shortAddress } from "@/lib/wallet";
 import type { PortfolioSnapshot, RebalanceProposal } from "@/lib/types";
 import {
@@ -44,6 +45,7 @@ export function Portfolio() {
   const [data, setData] = useState<LivePortfolio | null>(null);
   const [resolved, setResolved] = useState<Record<string, "approved" | "dismissed">>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [errored, setErrored] = useState(false);
 
   async function load() {
     setRefreshing(true);
@@ -51,10 +53,12 @@ export function Portfolio() {
       const addr = getSession()?.address;
       const url = addr ? `/api/portfolio?address=${encodeURIComponent(addr)}` : "/api/portfolio";
       const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
+      setErrored(false);
     } catch {
-      setData(null);
+      setErrored(true);
     } finally {
       setRefreshing(false);
     }
@@ -68,10 +72,28 @@ export function Portfolio() {
   }, []);
 
   if (!data) {
+    if (errored) {
+      return (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center text-sm text-muted-foreground">
+            <span>Couldn&apos;t load your portfolio just now.</span>
+            <Button size="sm" variant="secondary" onClick={load} disabled={refreshing}>
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card>
-        <CardContent className="p-10 text-center text-sm text-muted-foreground">
-          Loading portfolio…
+        <CardHeader>
+          <Skeleton className="h-4 w-40" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
         </CardContent>
       </Card>
     );

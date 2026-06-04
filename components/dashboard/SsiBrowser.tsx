@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layers, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Basket, ExecutionPlan } from "@/lib/types";
 
 interface SsiIndex {
@@ -73,7 +74,11 @@ export function SsiBrowser({ amountUsd, risk, onLoaded }: Props) {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="py-6 text-center text-xs text-muted-foreground">Loading SSI catalog…</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
         ) : indexes.length === 0 ? (
           <div className="py-6 text-center text-xs text-muted-foreground">No SSI indexes available right now.</div>
         ) : (
