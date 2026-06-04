@@ -205,7 +205,7 @@ clarity pass for Wave 2. Shipping:
 
 ## Submission package
 
-- **Repo** — https://github.com/janneh2000/mosaic
+- **Repo** — https://github.com/j12s-team/mosaic
 - **Live demo** — https://mosaic-ivory.vercel.app
 - **Judge's guide** — https://mosaic-ivory.vercel.app/judges
 - **Live integration status** — https://mosaic-ivory.vercel.app/diag

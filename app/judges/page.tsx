@@ -326,7 +326,7 @@ export default function JudgesPage() {
             Questions while judging? The full architecture, judging-rubric mapping and Wave-2
             changelog live in the repo&apos;s{" "}
             <Link
-              href="https://github.com/janneh2000/mosaic"
+              href="https://github.com/j12s-team/mosaic"
               target="_blank"
               className="text-brand-600 underline-offset-4 hover:underline dark:text-brand-300"
             >
