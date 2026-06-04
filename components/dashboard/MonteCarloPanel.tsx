@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPct } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { MonteCarloResult } from "@/lib/montecarlo";
 import {
   Area,
@@ -45,28 +46,40 @@ export function MonteCarloPanel({ result }: Props) {
       <CardContent className="space-y-5">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">VaR (95%)</div>
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              VaR (95%)
+              <InfoHint label="VaR (95%)" text="Value at Risk: in a normal-to-bad month (the worst 1-in-20), you'd be down at least this much in 30 days." />
+            </div>
             <div className="mt-1 font-mono text-lg font-semibold text-red-700 dark:text-red-300">
               {formatPct(result.varPct95 / 100, { signed: true })}
             </div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">5th-pct terminal return</div>
           </div>
           <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">CVaR (95%)</div>
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              CVaR (95%)
+              <InfoHint label="CVaR (95%)" text="Conditional VaR: if you do land in that worst 5% of outcomes, this is the average loss — the 'how bad is bad' number." />
+            </div>
             <div className="mt-1 font-mono text-lg font-semibold text-red-700 dark:text-red-300">
               {formatPct(result.cvarPct95 / 100, { signed: true })}
             </div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">avg loss in worst 5%</div>
           </div>
           <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Expected</div>
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Expected
+              <InfoHint label="Expected" text="The average 30-day return across all 1,000 simulated paths — the middle-of-the-road outcome, not a guarantee." />
+            </div>
             <div className={`mt-1 font-mono text-lg font-semibold ${exp >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}>
               {formatPct(exp, { signed: true })}
             </div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">mean terminal return</div>
           </div>
           <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Loss prob.</div>
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Loss prob.
+              <InfoHint label="Loss probability" text="Share of the 1,000 simulated paths that finished below what you put in — your odds of being underwater at day 30." />
+            </div>
             <div className={`mt-1 font-mono text-lg font-semibold ${result.probLossPct >= 50 ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}`}>
               {result.probLossPct.toFixed(1)}%
             </div>

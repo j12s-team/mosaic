@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatPct, formatUSD } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { Basket } from "@/lib/types";
 import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
 import { ExplainBasket } from "./ExplainBasket";
@@ -159,19 +160,28 @@ export function BasketProposal({ basket }: Props) {
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3 text-xs">
           <div>
-            <div className="text-muted-foreground">Expected annualized vol</div>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              Expected annualized vol
+              <InfoHint label="Expected annualized vol" text="How much this basket's value is expected to swing over a year. Lower means a steadier portfolio." />
+            </div>
             <div className="font-mono text-base">
               {(basket.expectedAnnualVol * 100).toFixed(1)}%
             </div>
           </div>
           <div>
-            <div className="text-muted-foreground">Concentration cap</div>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              Concentration cap
+              <InfoHint label="Concentration cap" text="The largest single-token weight. The agent caps this so no one coin can dominate the basket's risk." />
+            </div>
             <div className="font-mono text-base">
               {Math.max(...basket.constituents.map((c) => c.weight * 100)).toFixed(0)}%
             </div>
           </div>
           <div>
-            <div className="text-muted-foreground">Notional</div>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              Notional
+              <InfoHint label="Notional" text="The total USDC this basket would deploy across all legs when executed on SoDEX." />
+            </div>
             <div className="font-mono text-base">{formatUSD(basket.thesis.amountUsd)}</div>
           </div>
         </div>
