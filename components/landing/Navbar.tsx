@@ -26,13 +26,21 @@ export function Navbar() {
             SoDEX {network}
           </span>
         </Link>
-        <div className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
+        <div className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <Link href="/#how" className="hover:text-foreground">How it works</Link>
           <Link href="/#data" className="hover:text-foreground">Data sources</Link>
           <Link href="/#loop" className="hover:text-foreground">Agentic loop</Link>
-          <Link href="/#why" className="hover:text-foreground">Why Mosaic</Link>
+          <Link href="/judges" className="font-medium text-brand-600 hover:text-brand-500 dark:text-brand-300">
+            For judges
+          </Link>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/diag"
+            className="hidden text-sm text-muted-foreground hover:text-foreground lg:inline-block"
+          >
+            Status
+          </Link>
           <Link
             href="https://github.com/janneh2000/mosaic"
             target="_blank"
