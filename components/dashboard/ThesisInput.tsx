@@ -5,15 +5,82 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Wand2 } from "lucide-react";
+import {
+  Sparkles,
+  Wand2,
+  Cpu,
+  Landmark,
+  Radio,
+  Rocket,
+  Layers,
+  Building2,
+  Zap,
+} from "lucide-react";
 import type { RiskLevel } from "@/lib/types";
 
-const PRESETS = [
-  "I want exposure to AI-infrastructure with $1,000 and moderate risk.",
-  "Build me a DePIN basket — about $2,500, balanced risk.",
-  "DeFi blue chips only. Conservative. Five thousand dollars.",
-  "Aggressive memecoin trade, $500. Yes I know what I'm doing.",
-  "Tokenized RWA exposure with bias toward yield. $3,000, balanced.",
+interface DemoThesis {
+  label: string;
+  sub: string;
+  prompt: string;
+  amountUsd: number;
+  risk: RiskLevel;
+  Icon: typeof Cpu;
+}
+
+/**
+ * One-click sample theses. Each fills the prompt + amount + risk and submits
+ * immediately, so a judge gets a fully-populated basket + backtest in seconds
+ * with zero setup.
+ */
+const DEMOS: DemoThesis[] = [
+  {
+    label: "AI Infrastructure",
+    sub: "$1,000 · balanced",
+    prompt: "AI-infrastructure exposure — compute, inference and agent tokens. $1,000, balanced risk.",
+    amountUsd: 1000,
+    risk: "balanced",
+    Icon: Cpu,
+  },
+  {
+    label: "DeFi Bluechip",
+    sub: "$5,000 · conservative",
+    prompt: "DeFi blue chips only — established lending and DEX protocols. $5,000, conservative.",
+    amountUsd: 5000,
+    risk: "conservative",
+    Icon: Landmark,
+  },
+  {
+    label: "DePIN",
+    sub: "$2,500 · balanced",
+    prompt: "DePIN basket — decentralized physical infrastructure networks. $2,500, balanced risk.",
+    amountUsd: 2500,
+    risk: "balanced",
+    Icon: Radio,
+  },
+  {
+    label: "Memecoins",
+    sub: "$500 · aggressive",
+    prompt: "Aggressive memecoin trade. $500. Yes, I know what I'm doing.",
+    amountUsd: 500,
+    risk: "aggressive",
+    Icon: Rocket,
+  },
+  {
+    label: "Mirror MAG7.ssi",
+    sub: "$3,000 · balanced",
+    prompt: "Mirror the MAG7.ssi index — the largest crypto majors. $3,000, balanced.",
+    amountUsd: 3000,
+    risk: "balanced",
+    Icon: Layers,
+  },
+  {
+    label: "RWA",
+    sub: "$3,000 · balanced",
+    prompt: "Tokenized real-world assets with a bias toward yield. $3,000, balanced.",
+    amountUsd: 3000,
+    risk: "balanced",
+    Icon: Building2,
+  },
 ];
 
 interface Props {
@@ -22,9 +89,17 @@ interface Props {
 }
 
 export function ThesisInput({ onSubmit, loading }: Props) {
-  const [prompt, setPrompt] = useState(PRESETS[0]);
+  const [prompt, setPrompt] = useState(DEMOS[0].prompt);
   const [amount, setAmount] = useState(1000);
   const [risk, setRisk] = useState<RiskLevel>("balanced");
+
+  function runDemo(d: DemoThesis) {
+    if (loading) return;
+    setPrompt(d.prompt);
+    setAmount(d.amountUsd);
+    setRisk(d.risk);
+    onSubmit({ prompt: d.prompt, amountUsd: d.amountUsd, risk: d.risk });
+  }
 
   return (
     <Card className="ring-glow">
@@ -35,6 +110,44 @@ export function ThesisInput({ onSubmit, loading }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* One-click demo theses — zero setup for judges */}
+        <div>
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-brand-700 dark:text-brand-200">
+            <Zap className="h-3.5 w-3.5" />
+            Try a sample thesis
+            <span className="font-normal text-muted-foreground">— one click, builds instantly</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {DEMOS.map((d) => (
+              <button
+                key={d.label}
+                onClick={() => runDemo(d)}
+                disabled={loading}
+                className="group flex items-center gap-2.5 rounded-lg border border-border/50 bg-secondary/30 dark:bg-background/40 px-3 py-2.5 text-left transition hover:border-brand-500/50 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-md bg-brand-500/15 text-brand-600 transition group-hover:bg-brand-500/25 dark:text-brand-300">
+                  <d.Icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-medium">{d.label}</span>
+                  <span className="block truncate text-[10px] text-muted-foreground">{d.sub}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-border/40" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-card px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              or write your own
+            </span>
+          </div>
+        </div>
+
         <div>
           <label className="text-xs uppercase tracking-wider text-muted-foreground">
             Plain English thesis
@@ -46,18 +159,6 @@ export function ThesisInput({ onSubmit, loading }: Props) {
             placeholder="Describe what exposure you want, how much, and your risk tolerance."
             className="mt-2"
           />
-          <div className="mt-3 flex flex-wrap gap-2">
-            {PRESETS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPrompt(p)}
-                className="rounded-full border border-border/40 bg-secondary/30 dark:bg-background/40 px-3 py-1 text-xs text-muted-foreground transition hover:border-white/15 hover:text-foreground"
-              >
-                {p.slice(0, 38)}
-                {p.length > 38 ? "…" : ""}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

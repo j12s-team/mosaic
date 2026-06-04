@@ -132,6 +132,14 @@ export default function AppPage() {
       await advance("plan", `Total est. slippage: ${result.plan.estTotalSlippageBps} bps`);
       // Kick off backtest / MC / scenarios in parallel with the user reviewing.
       runAnalysis(result.basket);
+      // Bring the freshly-built basket into view (matters for one-click demos).
+      if (typeof window !== "undefined") {
+        setTimeout(() => {
+          document
+            .querySelector('[data-tour="basket"]')
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }
     }
     setLoading(false);
   }
