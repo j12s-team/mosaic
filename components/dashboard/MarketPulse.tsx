@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Activity, Layers, Newspaper, TrendingDown, TrendingUp } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LivePulse } from "@/components/ui/live-pulse";
 import type { NewsItem } from "@/lib/types";
 
 interface Ticker {
@@ -59,6 +61,7 @@ export function MarketPulse() {
           <Badge variant="brand" className="text-[10px]">
             SoDEX + SoSoValue
           </Badge>
+          <LivePulse label="streaming" className="ml-auto" />
         </CardTitle>
         <p className="mt-1 text-[11px] text-muted-foreground">
           Top 24h movers priced from{" "}
@@ -72,7 +75,11 @@ export function MarketPulse() {
             Movers
           </div>
           {loading ? (
-            <div className="py-4 text-center text-xs text-muted-foreground">Loading…</div>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
           ) : data && data.tickers.length > 0 ? (
             <div className="grid gap-1.5 sm:grid-cols-2">
               {data.tickers.map((t) => {
@@ -146,7 +153,11 @@ export function MarketPulse() {
             <Newspaper className="h-3 w-3" /> SoSoValue featured news
           </div>
           {loading ? (
-            <div className="py-4 text-center text-xs text-muted-foreground">Loading…</div>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
           ) : data && data.news.length > 0 ? (
             <ul className="space-y-2">
               {data.news.map((n) => (

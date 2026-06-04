@@ -22,7 +22,7 @@ import type { BacktestResult } from "@/lib/backtest";
 import type { MonteCarloResult } from "@/lib/montecarlo";
 import type { ScenarioResult } from "@/lib/scenarios";
 import { sleep } from "@/lib/utils";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, AlertTriangle, X } from "lucide-react";
 
 export default function AppPage() {
   const [loading, setLoading] = useState(false);
@@ -35,6 +35,7 @@ export default function AppPage() {
   const [analysing, setAnalysing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Track the last-used amount/risk so the SsiBrowser can mirror them.
   const [lastAmount, setLastAmount] = useState(1000);
   const [lastRisk, setLastRisk] = useState<RiskLevel>("balanced");
@@ -125,8 +126,13 @@ export default function AppPage() {
     await advance("weight", `Risk profile: ${input.risk}, concentration cap applied`);
     await advance("depth", "8 levels per market, IOC fill simulated");
 
-    const result = await reqPromise;
-    if (result.basket && result.plan) {
+    let result: { basket?: Basket; plan?: ExecutionPlan } | null = null;
+    try {
+      result = await reqPromise;
+    } catch {
+      result = null;
+    }
+    if (result && result.basket && result.plan) {
       setBasket(result.basket);
       setPlan(result.plan);
       await advance("plan", `Total est. slippage: ${result.plan.estTotalSlippageBps} bps`);
@@ -140,9 +146,20 @@ export default function AppPage() {
             ?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 120);
       }
+    } else {
+      // Surface the failure instead of leaving the button stuck.
+      setSteps([]);
+      setError("Couldn't build a basket from that thesis. Please try again in a moment.");
     }
     setLoading(false);
   }
+
+  // Auto-dismiss the error toast.
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(null), 6000);
+    return () => clearTimeout(id);
+  }, [error]);
 
   // Snapshot poll: every time we land on the dashboard, push a t-now snapshot
   // for any saved basket so the realised-return curve fills in.
@@ -315,6 +332,24 @@ export default function AppPage() {
           </div>
         </div>
       </main>
+
+      {/* Error toast — no silent failures */}
+      {error && (
+        <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
+          <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-card/95 p-3 pr-2 text-sm shadow-xl backdrop-blur-xl">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
+            <span className="max-w-xs text-foreground">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              aria-label="Dismiss"
+              className="rounded p-0.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <ProductTour forceOpen={tourOpen} onClose={() => setTourOpen(false)} />
     </>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -90,11 +91,14 @@ export function BasketProposal({ basket }: Props) {
           </div>
         </div>
 
-        {/* Per-constituent rationale */}
+        {/* Per-constituent rationale — revealed one-by-one */}
         <div className="space-y-2">
           {basket.constituents.map((c, i) => (
-            <div
+            <motion.div
               key={c.symbol}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08, duration: 0.3, ease: "easeOut" }}
               className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3"
             >
               <div className="flex items-start justify-between gap-3">
@@ -154,7 +158,7 @@ export function BasketProposal({ basket }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

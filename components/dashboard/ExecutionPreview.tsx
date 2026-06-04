@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { formatUSD } from "@/lib/utils";
 import { InfoHint } from "@/components/ui/info-hint";
 import type { Basket, ExecutionPlan } from "@/lib/types";
-import { ArrowDown, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
+import { ArrowDown, AlertTriangle, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
 import { getSession } from "@/lib/wallet";
 import { HOUSE_OWNER, saveBasket, appendSnapshot } from "@/lib/storage";
 
@@ -19,24 +19,34 @@ interface Props {
 
 export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
   const [stage, setStage] = useState<"review" | "confirm" | "executing" | "done">("review");
+  const [failed, setFailed] = useState(false);
 
   async function onExecute() {
     setStage("executing");
-    const res = await fetch("/api/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        basketId: plan.basketId,
-        confirm: true,
-        legs: plan.legs.map((l) => ({
-          market: l.market,
-          side: l.side,
-          notionalUsd: l.notionalUsd,
-          maxSlippageBps: 50,
-        })),
-      }),
-    });
+    setFailed(false);
+    let res: Response;
+    try {
+      res = await fetch("/api/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          basketId: plan.basketId,
+          confirm: true,
+          legs: plan.legs.map((l) => ({
+            market: l.market,
+            side: l.side,
+            notionalUsd: l.notionalUsd,
+            maxSlippageBps: 50,
+          })),
+        }),
+      });
+    } catch {
+      setFailed(true);
+      setStage("review");
+      return;
+    }
     if (!res.ok) {
+      setFailed(true);
       setStage("review");
       return;
     }
@@ -153,9 +163,17 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         </div>
 
         {stage === "review" && (
-          <Button className="w-full" onClick={() => setStage("confirm")}>
-            Review &amp; confirm <ChevronRight className="h-4 w-4" />
-          </Button>
+          <>
+            {failed && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-300">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                Execution didn&apos;t go through. No orders were placed — please try again.
+              </div>
+            )}
+            <Button className="w-full" onClick={() => setStage("confirm")}>
+              Review &amp; confirm <ChevronRight className="h-4 w-4" />
+            </Button>
+          </>
         )}
 
         {stage === "confirm" && (
