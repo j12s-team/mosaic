@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { ProductPreview } from "@/components/landing/ProductPreview";
 
 export function Hero() {
   return (
@@ -48,6 +49,11 @@ export function Hero() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
           Live on SoDEX testnet · mainnet read-only · no seed required
+        </div>
+
+        {/* Self-playing product preview — shows the whole loop without a click. */}
+        <div className="mt-12 w-full max-w-2xl">
+          <ProductPreview />
         </div>
 
         <div className="mt-14 grid w-full max-w-4xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
