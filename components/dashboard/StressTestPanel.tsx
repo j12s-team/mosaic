@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPct } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { ScenarioResult } from "@/lib/scenarios";
 import { AlertTriangle, ShieldOff, TrendingDown, TrendingUp } from "lucide-react";
 
@@ -24,6 +25,10 @@ export function StressTestPanel({ results }: Props) {
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-brand-600 dark:text-brand-300" />
             Historical regime stress tests
+            <InfoHint
+              label="Stress tests"
+              text="Replays your exact basket weights through real crisis windows (COVID, FTX, ETH-ETF). 'Max DD' is the worst drop; 'days underwater' is how long until it recovered."
+            />
           </CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
             How this basket would have behaved through three named market regimes.

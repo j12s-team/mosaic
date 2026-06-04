@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPct, formatUSD } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import { getSession, shortAddress } from "@/lib/wallet";
 import type { PortfolioSnapshot, RebalanceProposal } from "@/lib/types";
 import {
@@ -90,6 +91,14 @@ export function Portfolio() {
               <Badge variant={isLive ? "success" : "outline"} className="text-[10px]">
                 {isLive ? "live · testnet" : "demo · mocks"}
               </Badge>
+              <InfoHint
+                label="live vs demo"
+                text={
+                  isLive
+                    ? "Live: balances are read straight from your connected SoDEX testnet account and priced from /markets/tickers."
+                    : "Demo: no wallet connected, so this shows a deterministic mock portfolio. Connect a wallet to see real SoDEX testnet balances."
+                }
+              />
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground italic">
               {isLive && data.walletAddress

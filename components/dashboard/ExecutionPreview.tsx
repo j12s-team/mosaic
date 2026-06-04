@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatUSD } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { Basket, ExecutionPlan } from "@/lib/types";
 import { ArrowDown, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
 import { getSession } from "@/lib/wallet";
@@ -101,8 +102,12 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
             Estimated total slippage (size-weighted)
+            <InfoHint
+              label="Slippage"
+              text="The expected gap between the quoted price and your real fill, walking SoDEX's orderbook. 100 bps = 1%. Lower is cheaper to enter."
+            />
           </div>
           <div className="mt-1 font-mono text-2xl font-semibold">
             {plan.estTotalSlippageBps} bps

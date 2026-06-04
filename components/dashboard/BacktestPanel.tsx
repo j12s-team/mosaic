@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPct } from "@/lib/utils";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { BacktestResult } from "@/lib/backtest";
 import {
   Area,
@@ -26,17 +27,22 @@ function Stat({
   value,
   tone,
   hint,
+  info,
 }: {
   label: string;
   value: string;
   tone?: "pos" | "neg" | "neutral";
   hint?: string;
+  info?: string;
 }) {
   const color =
     tone === "pos" ? "text-emerald-700 dark:text-emerald-300" : tone === "neg" ? "text-red-700 dark:text-red-300" : "text-foreground";
   return (
     <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+        {info && <InfoHint label={label} text={info} />}
+      </div>
       <div className={`mt-1 font-mono text-lg font-semibold ${color}`}>{value}</div>
       {hint && <div className="mt-0.5 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
@@ -68,29 +74,53 @@ export function BacktestPanel({ result }: Props) {
             value={formatPct(result.totalReturnPct / 100, { signed: true })}
             tone={result.totalReturnPct >= 0 ? "pos" : "neg"}
             hint={`bench ${formatPct(result.benchmarkTotalReturnPct / 100, { signed: true })}`}
+            info="What this basket would have returned over the last 90 days, rebalanced daily, vs the MAG7.ssi benchmark."
           />
           <Stat
             label="Sharpe"
             value={result.sharpe.toFixed(2)}
             tone={result.sharpe >= 1 ? "pos" : result.sharpe < 0 ? "neg" : "neutral"}
             hint="annualized, rf=4%"
+            info="Return earned per unit of total risk. Above 1 is good; higher means a smoother ride for the same gain."
           />
           <Stat
             label="Max drawdown"
             value={formatPct(result.maxDrawdownPct / 100)}
             tone="neg"
             hint={result.maxDrawdownDate}
+            info="The worst peak-to-trough drop over the window — the deepest paper loss you'd have had to sit through."
           />
           <Stat
             label="Sortino"
             value={result.sortino.toFixed(2)}
             tone={result.sortino >= 1 ? "pos" : "neutral"}
             hint="downside-only vol"
+            info="Like Sharpe, but only penalizes downside moves — it ignores 'good' volatility from upside swings."
           />
-          <Stat label="Annualized return" value={formatPct(result.annualizedReturnPct / 100, { signed: true })} tone={result.annualizedReturnPct >= 0 ? "pos" : "neg"} />
-          <Stat label="Annualized vol" value={formatPct(result.annualizedVolPct / 100)} tone="neutral" />
-          <Stat label="Beta vs bench" value={result.beta.toFixed(2)} tone="neutral" />
-          <Stat label="Win-rate (daily)" value={`${result.winRatePct.toFixed(1)}%`} tone="neutral" />
+          <Stat
+            label="Annualized return"
+            value={formatPct(result.annualizedReturnPct / 100, { signed: true })}
+            tone={result.annualizedReturnPct >= 0 ? "pos" : "neg"}
+            info="The 90-day result scaled to a yearly rate so it's comparable across time horizons."
+          />
+          <Stat
+            label="Annualized vol"
+            value={formatPct(result.annualizedVolPct / 100)}
+            tone="neutral"
+            info="How much the basket's value swings, expressed as a yearly figure. Higher = bumpier."
+          />
+          <Stat
+            label="Beta vs bench"
+            value={result.beta.toFixed(2)}
+            tone="neutral"
+            info="Sensitivity to the MAG7.ssi benchmark. 1.0 moves in step; above 1 amplifies, below 1 dampens."
+          />
+          <Stat
+            label="Win-rate (daily)"
+            value={`${result.winRatePct.toFixed(1)}%`}
+            tone="neutral"
+            info="Share of days the basket finished up. A coin-flip is 50%."
+          />
         </div>
 
         <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
