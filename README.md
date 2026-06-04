@@ -1,16 +1,19 @@
 # Mosaic — your personal crypto hedge fund, run by an agent
 
-> **SoSoValue Buildathon** · Wave 1 ✓ (avg ~8.49 / 10) · **Wave 2 in build (May 18 – May 29, 2026)**
+> **SoSoValue Buildathon** · Wave 1 ✓ (avg ~8.49 / 10) · **Wave 2 — Build Phase May 23 – Jun 7, 2026**
+>
+> **Live:** https://mosaic-ivory.vercel.app · **Start here (judges):** [/judges](https://mosaic-ivory.vercel.app/judges) · **Live status:** [/diag](https://mosaic-ivory.vercel.app/diag)
 >
 > An agentic on-chain index manager: describe a thesis in plain English, Mosaic constructs
 > a thematic portfolio from SoSoValue data, executes it through the SoDEX orderbook, and
 > proposes rebalances when the underlying signals shift — with the user in the confirm loop.
 >
-> **Wave 2 ships:** 90-day backtest engine, 1,000-path Monte Carlo (VaR / CVaR), three
+> **Wave 2 ships:** a self-playing hero product preview, zero-setup one-click demo theses,
+> plain-English help on every metric, a `/judges` guide and live `/diag` status page, plus
+> the analytical core — 90-day backtest engine, 1,000-path Monte Carlo (VaR / CVaR), three
 > historical regime stress tests, WalletConnect-style SIWE identity, per-wallet basket
-> persistence with realised-return tracking, live SoDEX testnet wiring, and an inline
-> first-run product tour. See [`WAVE2.md`](./WAVE2.md) for the line-by-line response to
-> each Wave 1 judge critique.
+> persistence with realised-return tracking, and live SoDEX testnet wiring. See
+> [`WAVE2.md`](./WAVE2.md) for the line-by-line response to each Wave 1 judge critique.
 
 ---
 
@@ -175,15 +178,17 @@ treating them as generic price oracles.
 
 ## Roadmap
 
-### Wave 2 — in build (May 18 – May 29, 2026) — see [`WAVE2.md`](./WAVE2.md)
+### Wave 2 — Build Phase May 23 – Jun 7, 2026 — see [`WAVE2.md`](./WAVE2.md)
 
-Direct response to each Wave 1 judge critique. Shipping:
+Direct response to each Wave 1 judge critique, plus an execution-quality and
+clarity pass for Wave 2. Shipping:
 
 - **Backtest + Monte Carlo + stress tests** (answers jzddd's "needs backtesting + risk metrics + stress tests")
 - **Per-wallet basket persistence + realised-return tracking** (answers SmartCoded's "thesis vs one-week realised return")
-- **Inline first-run product tour** (answers MuhammadBa's "onboarding tutorial")
+- **Inline first-run product tour** + **zero-setup one-click demo theses** (answers MuhammadBa's "onboarding tutorial")
 - **WalletConnect-style SIWE identity**
 - **Live SoDEX testnet wiring** + mainnet env-flagged path
+- **Self-playing hero product preview**, **plain-English help on every metric**, a **`/judges` guide** and a live **`/diag`** integration-status page
 
 ### Wave 3
 
@@ -201,8 +206,10 @@ Direct response to each Wave 1 judge critique. Shipping:
 ## Submission package
 
 - **Repo** — https://github.com/janneh2000/mosaic
-- **Live demo** — link in submission.
-- **Video** — see `DEMO_SCRIPT.md`.
+- **Live demo** — https://mosaic-ivory.vercel.app
+- **Judge's guide** — https://mosaic-ivory.vercel.app/judges
+- **Live integration status** — https://mosaic-ivory.vercel.app/diag
+- **Video** — see `DEMO_SCRIPT_WAVE2.md` (Wave 2) and `DEMO_SCRIPT.md` (Wave 1).
 - **Team** — solo build (one-person business empire) by Rivaldo.
 - **Wave changelog** — see top of repo.
 

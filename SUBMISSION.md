@@ -4,8 +4,16 @@
 > point-by-point response to the substantive critiques. Full mapping in
 > [`WAVE2.md`](./WAVE2.md).
 
+> **Live demo:** https://mosaic-ivory.vercel.app · **Judge's guide:** https://mosaic-ivory.vercel.app/judges · **Live integration status:** https://mosaic-ivory.vercel.app/diag
+
 ## Wave 2 changelog (vs Wave 1)
 
+- **Self-playing hero product preview** — an above-the-fold, dependency-free animation of the full thesis → basket → backtest → execute loop, so judges grasp the product in seconds.
+- **Zero-setup demo mode** — one-click sample-thesis cards (AI Infra, DeFi Bluechip, DePIN, Memecoins, Mirror MAG7.ssi, RWA) that pre-fill and submit instantly, yielding a populated basket + analysis with no typing.
+- **Clarity sweep** — plain-English "what this means" (?) hints on every headline metric (Sharpe, VaR/CVaR, max drawdown, slippage bps, concentration cap, …).
+- **Judge's guide (`/judges`)** — 60-second test script, what to look for, an honest live-vs-simulated breakdown, and the exact SoSoValue + SoDEX endpoints called with sample responses.
+- **Public diagnostics page (`/diag`)** — calls every integration live and reports status, so judges can verify the wiring in real time.
+- **UX polish** — loading skeletons, error toasts with retry (no silent failures), staggered basket reveal, consistent live indicators.
 - **Backtest engine** (`lib/backtest.ts`) — daily-rebalanced 90d replay; Sharpe, Sortino, max DD (+ date), beta vs MAG7.ssi, realised 30d vol, win-rate, vs-benchmark excess return.
 - **Monte Carlo simulator** (`lib/montecarlo.ts`) — 1,000 bootstrap paths × 30d. Outputs p10/p50/p90 fan, VaR(95%), CVaR(95%), terminal-value histogram, loss probability.
 - **Historical scenario stress tests** (`lib/scenarios.ts`) — basket replayed through COVID Mar 2020, FTX Nov 2022, ETH ETF Jul 2024 regimes.
@@ -41,12 +49,15 @@
 
 ## Demo
 
-- Live demo URL: *insert Vercel URL after `vercel deploy`*
+- Live demo URL: **https://mosaic-ivory.vercel.app**
+- Judge's guide (start here): **https://mosaic-ivory.vercel.app/judges**
+- Live integration status: **https://mosaic-ivory.vercel.app/diag**
 - Local: `npm install && npm run dev → http://localhost:3000`
 
 ## Video Introduction
 
-- Script: see `DEMO_SCRIPT.md` (75–90 seconds)
+- Wave 2 script: see `DEMO_SCRIPT_WAVE2.md` (80–90 seconds)
+- Original Wave 1 script: see `DEMO_SCRIPT.md`
 
 ## Team Information
 
