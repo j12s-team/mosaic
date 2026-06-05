@@ -209,7 +209,7 @@ clarity pass for Wave 2. Shipping:
 - **Live demo** — https://mosaic-ivory.vercel.app
 - **Judge's guide** — https://mosaic-ivory.vercel.app/judges
 - **Live integration status** — https://mosaic-ivory.vercel.app/diag
-- **Video** — see `DEMO_SCRIPT_WAVE2.md` (Wave 2) and `DEMO_SCRIPT.md` (Wave 1).
+- **Video** — submitted with the Wave 2 entry.
 - **Team** — solo build (one-person business empire) by Rivaldo.
 - **Wave changelog** — see top of repo.
 

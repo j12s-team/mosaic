@@ -45,7 +45,6 @@
 
 - Repo: **https://github.com/j12s-team/mosaic**
 - README with full setup, architecture, judging-criteria mapping, env vars: `README.md`
-- Demo video script: `DEMO_SCRIPT.md`
 
 ## Demo
 
@@ -56,8 +55,7 @@
 
 ## Video Introduction
 
-- Wave 2 script: see `DEMO_SCRIPT_WAVE2.md` (80–90 seconds)
-- Original Wave 1 script: see `DEMO_SCRIPT.md`
+- Walkthrough video submitted with the Wave 2 entry.
 
 ## Team Information
 
