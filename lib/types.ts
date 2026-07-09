@@ -43,6 +43,8 @@ export interface Basket {
   createdAt: string;
   /** Reference SSI index that inspired construction, if any */
   benchmark?: { symbol: string; name: string };
+  /** Set when this basket was mirrored from a public basket (its id). */
+  mirroredFrom?: string;
 }
 
 export type RebalanceTrigger =

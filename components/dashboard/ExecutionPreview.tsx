@@ -9,7 +9,7 @@ import { InfoHint } from "@/components/ui/info-hint";
 import type { Basket, ExecutionPlan } from "@/lib/types";
 import { ArrowDown, AlertTriangle, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
 import { getSession } from "@/lib/wallet";
-import { HOUSE_OWNER, saveBasket, appendSnapshot } from "@/lib/storage";
+import { HOUSE_OWNER, saveBasketEverywhere, appendSnapshot } from "@/lib/storage";
 
 interface Props {
   plan: ExecutionPlan;
@@ -52,8 +52,10 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
     }
 
     // Persist the basket so the "thesis vs realised" loop can begin.
+    // Writes to the local cache and — when DATABASE_URL is configured —
+    // to Postgres, where the server records a chained t=0 snapshot.
     const owner = getSession()?.address ?? HOUSE_OWNER;
-    saveBasket(owner, {
+    await saveBasketEverywhere(owner, {
       basket,
       execution: {
         executedAt: new Date().toISOString(),

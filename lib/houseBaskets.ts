@@ -17,14 +17,15 @@ import {
 
 const SEED_FLAG = "mosaic.house.seeded.v2";
 
-interface HouseSpec {
+export interface HouseSpec {
   basket: Basket;
   notionalUsd: number;
   /** Daily return path (length = 7) used to generate the 7-day snapshot trail. */
   dailyReturns: number[];
 }
 
-const SEED_PROMPTS: HouseSpec[] = [
+/** Exported so the server-side cron can seed the same baskets into Postgres. */
+export const SEED_PROMPTS: HouseSpec[] = [
   {
     notionalUsd: 1000,
     dailyReturns: [0.011, -0.004, 0.022, 0.008, -0.006, 0.014, 0.009],

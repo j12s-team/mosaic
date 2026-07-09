@@ -161,14 +161,58 @@ export default function AppPage() {
     return () => clearTimeout(id);
   }, [error]);
 
+  // One-click mirror entry point: /app?mirror=<slug>&notional=<usd> lands
+  // here from a public basket page. The server returns the public basket's
+  // exact weights scaled to the visitor's notional + a fresh SoDEX plan, and
+  // the normal proposal → analysis → confirm-gated pipeline takes over.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("mirror");
+    if (!slug) return;
+    const notional = Math.max(10, Number(params.get("notional")) || 1000);
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/mirror", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug, amountUsd: notional }),
+        });
+        if (!res.ok) throw new Error("mirror failed");
+        const data: { basket: Basket; plan: ExecutionPlan } = await res.json();
+        setLastAmount(notional);
+        onSsiLoaded({ basket: data.basket, plan: data.plan });
+        setSteps([
+          { id: "parse", label: `Loaded public basket "${slug}"`, status: "done" },
+          { id: "score", label: "Copied exact weights (mirror)", status: "done" },
+          { id: "weight", label: `Scaled to $${notional.toLocaleString()}`, status: "done" },
+          { id: "depth", label: "Queried SoDEX orderbook depth for each leg", status: "done" },
+          { id: "plan", label: `Total est. slippage: ${data.plan.estTotalSlippageBps} bps`, status: "done" },
+        ]);
+      } catch {
+        setError("Couldn't load that public basket to mirror. It may have been unpublished.");
+      } finally {
+        setLoading(false);
+        // Clean the URL so refreshes don't re-trigger the mirror.
+        window.history.replaceState(null, "", "/app");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Snapshot poll: every time we land on the dashboard, push a t-now snapshot
   // for any saved basket so the realised-return curve fills in.
+  // When the durable backend is active the server-side cron owns snapshots,
+  // so the client-side drift model stays off entirely.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const { getSession } = await import("@/lib/wallet");
-        const { HOUSE_OWNER, listBaskets, appendSnapshot } = await import("@/lib/storage");
+        const { HOUSE_OWNER, listBaskets, appendSnapshot, probeServer } = await import("@/lib/storage");
+        if (await probeServer()) return; // server snapshotter owns the series
+        if (cancelled) return;
         const owner = getSession()?.address ?? HOUSE_OWNER;
         const saved = listBaskets(owner).filter((b) => b.status === "active");
         for (const b of saved) {

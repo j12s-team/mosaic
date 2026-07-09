@@ -9,10 +9,15 @@ import {
   HOUSE_OWNER,
   listBaskets,
   predictedVsRealised,
+  syncWithServer,
+  isServerMode,
+  setBasketPublic,
+  getRemoteMeta,
   type SavedBasket,
 } from "@/lib/storage";
 import { seedHouseBasketsIfNeeded } from "@/lib/houseBaskets";
-import { Bookmark, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { useChartColors, tooltipStyle } from "@/lib/chartColors";
+import { Bookmark, ChevronDown, ChevronRight, Sparkles, Globe, Link2, CloudUpload } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -23,9 +28,13 @@ import {
 } from "recharts";
 
 export function MyBaskets() {
+  const cc = useChartColors();
   const [owner, setOwner] = useState<string>(HOUSE_OWNER);
   const [baskets, setBaskets] = useState<SavedBasket[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [cloud, setCloud] = useState(false);
+  const [publicSlugs, setPublicSlugs] = useState<Record<string, string | null>>({});
+  const [copied, setCopied] = useState<string | null>(null);
 
   function refresh() {
     setBaskets(listBaskets(owner));
@@ -38,6 +47,54 @@ export function MyBaskets() {
     const s = getSession();
     setOwner(s?.address ?? HOUSE_OWNER);
   }, []);
+
+  // Two-way sync with the durable backend (no-op when DATABASE_URL is off):
+  // pulls server baskets + chained snapshots into the local cache and pushes
+  // any local-only baskets up (one-time idempotent import).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const active = await syncWithServer(owner);
+      if (cancelled) return;
+      setCloud(active);
+      if (active) {
+        setBaskets(listBaskets(owner));
+        const slugs: Record<string, string | null> = {};
+        for (const b of listBaskets(owner)) {
+          const meta = getRemoteMeta(b.basket.id);
+          if (meta?.isPublic) slugs[b.basket.id] = meta.slug;
+        }
+        setPublicSlugs(slugs);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [owner]);
+
+  async function togglePublic(basketId: string) {
+    const isPublic = basketId in publicSlugs;
+    const slug = await setBasketPublic(owner, basketId, !isPublic);
+    setPublicSlugs((prev) => {
+      const next = { ...prev };
+      if (isPublic) delete next[basketId];
+      else next[basketId] = slug;
+      return next;
+    });
+  }
+
+  async function copyPublicLink(basketId: string) {
+    const slug = publicSlugs[basketId];
+    if (!slug) return;
+    const url = `${window.location.origin}/b/${slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(basketId);
+      setTimeout(() => setCopied(null), 1600);
+    } catch {
+      // clipboard unavailable — the link is still visible in the UI
+    }
+  }
 
   useEffect(() => {
     const rows = listBaskets(owner);
@@ -101,10 +158,18 @@ export function MyBaskets() {
         <CardTitle className="flex items-center gap-2">
           <Bookmark className="h-4 w-4 text-primary" />
           Your saved baskets ({baskets.length})
+          {cloud && (
+            <Badge variant="brand" className="ml-1">
+              <CloudUpload className="h-3 w-3" />
+              synced
+            </Badge>
+          )}
         </CardTitle>
         <p className="mt-1 text-xs text-on-surface-variant">
           Thesis, fills, and realised return — tracked since the moment you executed. Click a
           basket to expand the per-leg fills Mosaic routed through SoDEX.
+          {cloud &&
+            " Snapshots are recorded server-side daily and hash-chained, so your track record accrues even with the tab closed."}
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -171,6 +236,38 @@ export function MyBaskets() {
                   <div className="text-[10px] text-on-surface-variant">
                     on {formatUSD(b.execution.notionalUsd)}
                   </div>
+                  {cloud && (
+                    <div className="mt-2 flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => togglePublic(b.basket.id)}
+                        title={
+                          b.basket.id in publicSlugs
+                            ? "Make private"
+                            : "Publish a public, verifiable track-record page"
+                        }
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition ${
+                          b.basket.id in publicSlugs
+                            ? "border-transparent bg-primary-container text-on-primary-container"
+                            : "border-outline text-on-surface-variant hover:text-on-surface"
+                        }`}
+                      >
+                        <Globe className="h-3 w-3" />
+                        {b.basket.id in publicSlugs ? "public" : "publish"}
+                      </button>
+                      {b.basket.id in publicSlugs && publicSlugs[b.basket.id] && (
+                        <button
+                          type="button"
+                          onClick={() => copyPublicLink(b.basket.id)}
+                          title="Copy public link"
+                          className="inline-flex items-center gap-1 rounded-full border border-outline px-2 py-0.5 text-[10px] text-on-surface-variant transition hover:text-on-surface"
+                        >
+                          <Link2 className="h-3 w-3" />
+                          {copied === b.basket.id ? "copied!" : "link"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -222,14 +319,14 @@ export function MyBaskets() {
                     <AreaChart data={pvr.realisedSeries} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                       <defs>
                         <linearGradient id={`rr-${b.basket.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={realised >= 0 ? "rgb(52,211,153)" : "rgb(248,113,113)"} stopOpacity={0.4} />
-                          <stop offset="100%" stopColor={realised >= 0 ? "rgb(52,211,153)" : "rgb(248,113,113)"} stopOpacity={0} />
+                          <stop offset="0%" stopColor={realised >= 0 ? cc.success : cc.error} stopOpacity={0.4} />
+                          <stop offset="100%" stopColor={realised >= 0 ? cc.success : cc.error} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <Area
                         type="monotone"
                         dataKey="realised"
-                        stroke={realised >= 0 ? "rgb(52,211,153)" : "rgb(248,113,113)"}
+                        stroke={realised >= 0 ? cc.success : cc.error}
                         strokeWidth={1.5}
                         fill={`url(#rr-${b.basket.id})`}
                         isAnimationActive={false}
@@ -237,12 +334,7 @@ export function MyBaskets() {
                       <XAxis dataKey="t" hide />
                       <YAxis hide domain={["auto", "auto"]} />
                       <Tooltip
-                        contentStyle={{
-                          background: "rgba(10,15,28,0.95)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: 8,
-                          fontSize: 11,
-                        }}
+                        contentStyle={tooltipStyle(cc)}
                         labelFormatter={(v) => new Date(v).toLocaleString()}
                         formatter={(v: number) => [formatPct(v), "Realised"]}
                       />
