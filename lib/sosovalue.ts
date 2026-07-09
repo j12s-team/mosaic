@@ -129,12 +129,51 @@ function pctToFraction(v: unknown): number {
   return +(Math.abs(n) > 1 ? n / 100 : n).toFixed(6);
 }
 
+// ---------------------------------------------------------------------------
+// Rate-limit-aware transport. SoSoValue quotas are tight, and one dashboard
+// load fans out to dozens of endpoints — so:
+//  - in-memory TTL cache (per server instance) dedupes repeat calls
+//  - a 429 trips a global cooldown during which calls fail fast to fallbacks
+//  - callers use mapLimit() to cap upstream concurrency
+// ---------------------------------------------------------------------------
+
+const memCache = new Map<string, { at: number; data: unknown }>();
+let cooldownUntil = 0;
+
+function ttlFor(path: string): number {
+  if (path.includes("/currencies") && !path.includes("market-snapshot") && !path.includes("klines")) {
+    return 60 * 60_000; // symbol list: 1h
+  }
+  if (path.includes("klines")) return 15 * 60_000; // momentum inputs: 15m
+  return 60_000; // snapshots / news / indices: 1m
+}
+
+/** Run `fn` over items with at most `limit` in flight. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const key = process.env.SOSOVALUE_API_KEY;
   if (!key) throw new Error("SOSOVALUE_API_KEY not set");
 
-  // `next.revalidate` is a Next.js fetch extension; cast to keep this file
-  // typecheck-clean even when only node `lib.dom` types are loaded.
+  const cached = memCache.get(path);
+  if (cached && Date.now() - cached.at < ttlFor(path)) {
+    return cached.data as T;
+  }
+  if (Date.now() < cooldownUntil) {
+    throw new Error("SoSoValue rate-limit cooldown — serving fallbacks");
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
@@ -142,13 +181,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       "x-soso-api-key": key,
       ...(init?.headers ?? {}),
     },
-    // SoSoValue data updates ~1m; cache 30s server-side.
     ...({ next: { revalidate: 30 } } as Record<string, unknown>),
   } as RequestInit);
   if (!res.ok) {
+    if (res.status === 429) {
+      cooldownUntil = Date.now() + 30_000;
+    }
     throw new Error(`SoSoValue ${res.status}: ${await res.text()}`);
   }
-  return res.json() as Promise<T>;
+  const data = (await res.json()) as T;
+  memCache.set(path, { at: Date.now(), data });
+  return data;
 }
 
 /**
@@ -196,10 +239,10 @@ export async function getFeaturedNews(opts: { currency?: string; pageSize?: numb
   // list. Each call is wrapped so one bad endpoint doesn't kill the chain.
   const candidates: Array<{ path: string; pick: (r: any) => any[] }> = [
     {
-      // Documented endpoint (SoSoValue API docs): page_size min 20.
+      // Live API wants pageNum/pageSize (its 400 says so); pageSize min 20.
       path: `${V1}/news/featured?${new URLSearchParams({
-        page: "1",
-        page_size: String(Math.max(20, pageSize)),
+        pageNum: "1",
+        pageSize: String(Math.max(20, pageSize)),
       })}`,
       pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.list ?? r?.data ?? r ?? [],
     },
@@ -415,8 +458,7 @@ export async function listSsiIndexes(): Promise<SsiIndex[]> {
     const tickers = unwrap<string[]>(await call<unknown>(`${V1}/indices`));
     if (Array.isArray(tickers) && tickers.length > 0 && typeof tickers[0] === "string") {
       const subset = tickers.slice(0, 12);
-      const rows = await Promise.all(
-        subset.map(async (t): Promise<SsiIndex | null> => {
+      const rows = await mapLimit(subset, 3, async (t): Promise<SsiIndex | null> => {
           try {
             const snap = unwrap<Record<string, unknown>>(
               await call<unknown>(`${V1}/indices/${t}/market-snapshot`),
@@ -430,8 +472,7 @@ export async function listSsiIndexes(): Promise<SsiIndex[]> {
           } catch {
             return null;
           }
-        }),
-      );
+        });
       const live = rows.filter((x): x is SsiIndex => Boolean(x));
       if (live.length > 0) return live;
     }
@@ -645,8 +686,7 @@ export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
     .filter((x): x is LivePrice => Boolean(x));
   if (useMocks()) return seedRows;
 
-  const results = await Promise.all(
-    upper.map(async (s): Promise<LivePrice | null> => {
+  const results = await mapLimit(upper, 4, async (s): Promise<LivePrice | null> => {
       // Documented path: /currencies/{id}/market-snapshot.
       try {
         const snap = await marketSnapshot(s);
@@ -682,8 +722,7 @@ export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
       } catch {
         return seedPrice(s);
       }
-    }),
-  );
+    });
 
   const out = results.filter((x): x is LivePrice => Boolean(x));
   return out.length > 0 ? out : seedRows;
