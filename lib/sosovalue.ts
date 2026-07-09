@@ -43,6 +43,16 @@ interface CurrencyRow {
   name?: string;
 }
 
+/** Known symbol drift between Mosaic's universe and the /currencies list. */
+const CURRENCY_ALIASES: Record<string, string[]> = {
+  RNDR: ["RNDR", "RENDER"],
+  IO: ["IO", "IONET", "IO.NET"],
+  WIF: ["WIF", "DOGWIFHAT"],
+  FET: ["FET", "ASI"],
+  TAO: ["TAO", "BITTENSOR"],
+  POLYX: ["POLYX", "POLYMESH"],
+};
+
 let currencyCache: { at: number; map: Map<string, CurrencyRow> } | null = null;
 
 async function currencyMap(): Promise<Map<string, CurrencyRow>> {
@@ -65,10 +75,24 @@ interface MarketSnapshot {
   [k: string]: unknown;
 }
 
+function findCurrency(map: Map<string, CurrencyRow>, sym: string): CurrencyRow | null {
+  const upper = sym.toUpperCase();
+  for (const candidate of CURRENCY_ALIASES[upper] ?? [upper]) {
+    const row = map.get(candidate);
+    if (row) return row;
+  }
+  return null;
+}
+
 async function marketSnapshot(sym: string): Promise<MarketSnapshot | null> {
   const map = await currencyMap();
-  const row = map.get(sym.toUpperCase());
-  if (!row) return null;
+  const row = findCurrency(map, sym);
+  if (!row) {
+    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+      console.warn(`[sosovalue] no /currencies match for ${sym}`);
+    }
+    return null;
+  }
   return unwrap<MarketSnapshot>(
     await call<unknown>(`${V1}/currencies/${row.currency_id}/market-snapshot`),
   );
@@ -78,7 +102,7 @@ async function marketSnapshot(sym: string): Promise<MarketSnapshot | null> {
 async function klineMomentum(sym: string, days: number): Promise<number | null> {
   try {
     const map = await currencyMap();
-    const row = map.get(sym.toUpperCase());
+    const row = findCurrency(map, sym);
     if (!row) return null;
     const rows = unwrap<Array<{ close?: number | string; timestamp?: number }>>(
       await call<unknown>(`${V1}/currencies/${row.currency_id}/klines?interval=1d&limit=${days + 1}`),
@@ -93,11 +117,16 @@ async function klineMomentum(sym: string, days: number): Promise<number | null> 
   }
 }
 
-/** The API reports percentage fields as percent numbers (1.82 = +1.82%). */
+/**
+ * Normalize a change field to a FRACTION (0.034 = +3.4%). Live responses
+ * report fractions; some surfaces report percent numbers (1.82 = +1.82%).
+ * Heuristic: |n| > 1 is percent-style (daily index/currency moves above
+ * 100% don't realistically occur), else it is already a fraction.
+ */
 function pctToFraction(v: unknown): number {
   const n = Number(v);
   if (!Number.isFinite(n)) return 0;
-  return +(n / 100).toFixed(6);
+  return +(Math.abs(n) > 1 ? n / 100 : n).toFixed(6);
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {

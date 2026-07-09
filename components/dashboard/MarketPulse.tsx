@@ -71,7 +71,7 @@ export function MarketPulse() {
         </CardTitle>
         <p className="mt-1 text-[11px] text-on-surface-variant">
           Top 24h movers priced from{" "}
-          <code className="font-mono">SoSoValue /token/metrics</code> (real spot, not testnet
+          <code className="font-mono">SoSoValue market snapshots</code> (real spot, not testnet
           synthetic prices) alongside SSI index moves and featured news. Refreshes every minute.
         </p>
       </CardHeader>
