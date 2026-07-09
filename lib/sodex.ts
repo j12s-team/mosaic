@@ -414,32 +414,37 @@ async function signSodexPayload(payloadJson: string, nonce: number): Promise<str
 }
 
 /**
- * Spot batch-order payload. Field names follow the SoDEX API docs' newOrder
- * action shape; verify with a testnet round-trip before arming
- * MOSAIC_REAL_ORDERS on mainnet (staged rollout — design.md, Migration Plan).
+ * Spot batch-order payload — shape confirmed by SoDEX's own validator
+ * (testnet round-trip 2026-07-09): the endpoint binds the body directly
+ * into BatchNewOrderParams{ AccountID, Orders } — no {type, params}
+ * wrapper — and AccountID is required. It defaults to the address of the
+ * registered signing key; SODEX_ACCOUNT_ID overrides when SoDEX assigns a
+ * distinct account id.
  */
-function buildSpotOrderPayload(args: {
+async function buildSpotOrderPayload(args: {
   market: string;
   side: "buy" | "sell";
   quantity: number;
   price: number;
 }) {
+  let accountID = process.env.SODEX_ACCOUNT_ID ?? "";
+  if (!accountID && process.env.SODEX_API_SECRET) {
+    const { privateKeyToAddress } = await import("./eip712");
+    accountID = privateKeyToAddress(process.env.SODEX_API_SECRET);
+  }
   return {
-    type: "newOrder",
-    params: {
-      accountID: process.env.SODEX_ACCOUNT_ID ?? "",
-      symbolID: toSodexSymbol(args.market),
-      orders: [
-        {
-          clOrdID: `mosaic-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-          side: args.side.toUpperCase(),
-          type: "LIMIT",
-          timeInForce: "IOC",
-          quantity: String(args.quantity),
-          price: String(args.price),
-        },
-      ],
-    },
+    accountID,
+    orders: [
+      {
+        symbolID: toSodexSymbol(args.market),
+        clOrdID: `mosaic-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+        side: args.side.toUpperCase(),
+        type: "LIMIT",
+        timeInForce: "IOC",
+        quantity: String(args.quantity),
+        price: String(args.price),
+      },
+    ],
   };
 }
 
@@ -480,7 +485,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
   const direction = input.side === "buy" ? 1 : -1;
   const limitPrice = +(estPrice * (1 + (direction * cap) / 10_000)).toPrecision(8);
   const quantity = +(input.notionalUsd / limitPrice).toPrecision(8);
-  const payload = buildSpotOrderPayload({
+  const payload = await buildSpotOrderPayload({
     market: input.market,
     side: input.side,
     quantity,
