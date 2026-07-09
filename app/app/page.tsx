@@ -17,6 +17,14 @@ import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist"
 import { SsiBrowser } from "@/components/dashboard/SsiBrowser";
 import { MarketPulse } from "@/components/dashboard/MarketPulse";
 import { MandateCard } from "@/components/dashboard/MandateCard";
+import {
+  useUiMode,
+  ModeToggle,
+  GuidedStep,
+  useDeskShortcuts,
+  ShortcutSheet,
+  type DeskShortcut,
+} from "@/components/dashboard/UiMode";
 import { Button } from "@/components/ui/button";
 import type { Basket, ExecutionPlan, RiskLevel } from "@/lib/types";
 import type { BacktestResult } from "@/lib/backtest";
@@ -40,6 +48,31 @@ export default function AppPage() {
   // Track the last-used amount/risk so the SsiBrowser can mirror them.
   const [lastAmount, setLastAmount] = useState(1000);
   const [lastRisk, setLastRisk] = useState<RiskLevel>("balanced");
+
+  // Guided (progressive stepper) vs Desk (dense grid + keyboard). One data
+  // layer, two compositions — dual-mode-ui spec.
+  const { mode, setMode } = useUiMode();
+  const isDesk = (mode ?? "desk") === "desk";
+
+  const scrollToPanel = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const deskShortcuts: DeskShortcut[] = [
+    {
+      key: "t",
+      label: "Focus thesis input",
+      run: () => {
+        scrollToPanel("panel-thesis");
+        (document.querySelector('[data-tour="thesis"] textarea') as HTMLTextAreaElement | null)?.focus();
+      },
+    },
+    { key: "1", label: "Jump to thesis", run: () => scrollToPanel("panel-thesis") },
+    { key: "2", label: "Jump to proposal", run: () => scrollToPanel("panel-basket") },
+    { key: "3", label: "Jump to analysis", run: () => scrollToPanel("panel-analysis") },
+    { key: "4", label: "Jump to execution", run: () => scrollToPanel("panel-execute") },
+    { key: "5", label: "Jump to my baskets", run: () => scrollToPanel("panel-baskets") },
+    { key: "6", label: "Jump to portfolio", run: () => scrollToPanel("panel-portfolio") },
+  ];
+  const { sheetOpen, setSheetOpen } = useDeskShortcuts(isDesk, deskShortcuts);
 
   function onSsiLoaded(data: { basket: Basket; plan: ExecutionPlan }) {
     // Mirror what onSubmit would have produced — keeps the rest of the UI
@@ -243,6 +276,54 @@ export default function AppPage() {
     };
   }, [refreshKey]);
 
+  // ---- Shared panels (single source; both modes compose these) ----
+  const thesisPanel = (
+    <div data-tour="thesis" id="panel-thesis">
+      <ThesisInput onSubmit={onSubmit} loading={loading} />
+    </div>
+  );
+  const ssiPanel = (
+    <SsiBrowser amountUsd={lastAmount} risk={lastRisk} onLoaded={onSsiLoaded} />
+  );
+  const proposalPanel = basket && (
+    <div data-tour="basket" id="panel-basket">
+      <BasketProposal basket={basket} />
+    </div>
+  );
+  const analysisPanel = basket && (
+    <div data-tour="analysis" id="panel-analysis" className="space-y-6">
+      {analysing && !backtest && (
+        <div className="rounded-md border border-outline-variant bg-surface-container-low p-4 text-sm text-on-surface-variant">
+          Running backtest + Monte Carlo + scenario stress tests…
+        </div>
+      )}
+      {backtest && <BacktestPanel result={backtest} />}
+      {mc && <MonteCarloPanel result={mc} />}
+      {scenarios && <StressTestPanel results={scenarios} />}
+    </div>
+  );
+  const executePanel = plan && basket && (
+    <div data-tour="execute" id="panel-execute">
+      <ExecutionPreview plan={plan} basket={basket} onExecuted={() => setRefreshKey((k) => k + 1)} />
+    </div>
+  );
+  const basketsPanel = (
+    <div id="panel-baskets">
+      <MyBaskets key={refreshKey} />
+    </div>
+  );
+  const portfolioPanel = (
+    <div id="panel-portfolio">
+      <Portfolio />
+    </div>
+  );
+  const agentLogPanel = steps.length > 0 && (
+    <div data-tour="agent">
+      <AgentLog steps={steps} />
+    </div>
+  );
+  const mandatePanel = <MandateCard basket={basket} amountUsd={lastAmount} />;
+
   return (
     <>
       <Navbar />
@@ -251,132 +332,152 @@ export default function AppPage() {
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mosaic agent</h1>
             <p className="mt-1 text-sm text-on-surface-variant">
-              Thesis → basket → backtest → execution → portfolio.
+              {isDesk
+                ? "Thesis → basket → backtest → execution → portfolio. Press ? for shortcuts."
+                : "Five steps from an idea to a tracked, on-chain basket."}
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setTourOpen(true)}>
-            <HelpCircle className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Replay tour</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ModeToggle mode={mode} onChange={setMode} />
+            {isDesk && (
+              <Button variant="ghost" size="sm" onClick={() => setTourOpen(true)}>
+                <HelpCircle className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Replay tour</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         <HealthBanner />
 
-        <div className="mt-4">
-          <OnboardingChecklist />
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-6">
-            <div data-tour="thesis">
-              <ThesisInput onSubmit={onSubmit} loading={loading} />
+        {isDesk ? (
+          <>
+            <div className="mt-4">
+              <OnboardingChecklist />
             </div>
 
-            <SsiBrowser
-              amountUsd={lastAmount}
-              risk={lastRisk}
-              onLoaded={onSsiLoaded}
-            />
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+              <div className="space-y-6">
+                {thesisPanel}
+                {ssiPanel}
+                {proposalPanel}
+                {analysisPanel}
+                {executePanel}
+                {basketsPanel}
+                {portfolioPanel}
+              </div>
+
+              <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+                <MarketPulse />
+                {mandatePanel}
+                {agentLogPanel}
+                <div className="rounded-md border border-outline-variant bg-surface-container-low p-4">
+                  <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                    Mode
+                  </div>
+                  <p className="text-sm leading-relaxed">
+                    Demo runs against testnet + mock fallbacks so judges never hit a paywall. Set
+                    <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
+                      SOSOVALUE_API_KEY
+                    </span>
+                    and
+                    <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
+                      SODEX_API_KEY
+                    </span>
+                    in
+                    <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
+                      .env.local
+                    </span>
+                    to flip into live mode. Toggle
+                    <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
+                      MOSAIC_NETWORK=mainnet
+                    </span>
+                    only after depositing collateral per the SoDEX docs.
+                  </p>
+                  <a
+                    href="https://sosovalue.gitbook.io/soso-value-api-doc"
+                    target="_blank"
+                    className="mt-3 inline-block text-xs text-primary underline-offset-4 hover:underline"
+                  >
+                    SoSoValue API docs →
+                  </a>
+                  <a
+                    href="https://sodex.com/documentation/api/api"
+                    target="_blank"
+                    className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
+                  >
+                    SoDEX API docs →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="mx-auto mt-8 max-w-3xl space-y-10">
+            <GuidedStep
+              step={1}
+              title="Describe your thesis"
+              description="Plain English is enough — the agent turns it into a weighted basket. Or start from a SoSoValue index below."
+              done={Boolean(basket)}
+            >
+              {thesisPanel}
+              {!basket && ssiPanel}
+            </GuidedStep>
 
             {basket && (
-              <div data-tour="basket">
-                <BasketProposal basket={basket} />
-              </div>
+              <GuidedStep
+                step={2}
+                title="Review the proposal"
+                description="Every constituent carries its reasoning — theme fit, momentum, sentiment, and liquidity."
+                done={Boolean(plan)}
+              >
+                {proposalPanel}
+                {agentLogPanel}
+              </GuidedStep>
             )}
 
             {basket && (
-              <div data-tour="analysis" className="space-y-6">
-                {analysing && !backtest && (
-                  <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4 text-sm text-on-surface-variant">
-                    Running backtest + Monte Carlo + scenario stress tests…
-                  </div>
-                )}
-                {backtest && <BacktestPanel result={backtest} />}
-                {mc && <MonteCarloPanel result={mc} />}
-                {scenarios && <StressTestPanel results={scenarios} />}
-              </div>
+              <GuidedStep
+                step={3}
+                title="Check the risk"
+                description="Backtest, 1,000-path Monte Carlo, and three historical stress tests — before any money moves."
+                done={Boolean(backtest)}
+              >
+                {analysisPanel}
+              </GuidedStep>
             )}
 
             {plan && basket && (
-              <div data-tour="execute">
-                <ExecutionPreview
-                  plan={plan}
-                  basket={basket}
-                  onExecuted={() => setRefreshKey((k) => k + 1)}
-                />
-              </div>
+              <GuidedStep
+                step={4}
+                title="Execute — you stay in control"
+                description="Nothing is placed without your confirm. On mainnet, execution also needs your signed mandate."
+                done={refreshKey > 0}
+              >
+                {executePanel}
+                {mandatePanel}
+              </GuidedStep>
             )}
 
-            <MyBaskets key={refreshKey} />
+            <GuidedStep
+              step={5}
+              title="Track your record"
+              description="Saved baskets snapshot daily server-side, hash-chained so the history is verifiable. Publish one to share it."
+            >
+              {basketsPanel}
+              {portfolioPanel}
+            </GuidedStep>
 
-            <Portfolio />
+            <details className="rounded-md border border-outline-variant bg-surface-container-low p-4">
+              <summary className="cursor-pointer text-title-md text-on-surface">
+                Market context
+              </summary>
+              <div className="mt-4">
+                <MarketPulse />
+              </div>
+            </details>
           </div>
-
-          <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-            <MarketPulse />
-            <MandateCard basket={basket} amountUsd={lastAmount} />
-            {steps.length > 0 && (
-              <div data-tour="agent">
-                <AgentLog steps={steps} />
-              </div>
-            )}
-            <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
-                Mode
-              </div>
-              <p className="text-sm leading-relaxed">
-                Demo runs against testnet + mock fallbacks so judges never hit a paywall. Set
-                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
-                  SOSOVALUE_API_KEY
-                </span>
-                and
-                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
-                  SODEX_API_KEY
-                </span>
-                in
-                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
-                  .env.local
-                </span>
-                to flip into live mode. Toggle
-                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
-                  MOSAIC_NETWORK=mainnet
-                </span>
-                only after depositing collateral per the SoDEX docs.
-              </p>
-              <a
-                href="https://sosovalue.gitbook.io/soso-value-api-doc"
-                target="_blank"
-                className="mt-3 inline-block text-xs text-primary underline-offset-4 hover:underline"
-              >
-                SoSoValue API docs →
-              </a>
-              <a
-                href="https://sodex.com/documentation/api/api"
-                target="_blank"
-                className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
-              >
-                SoDEX API docs →
-              </a>
-            </div>
-
-            <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
-                Wave 2 upgrades
-              </div>
-              <ul className="space-y-1.5 text-xs text-on-surface-variant">
-                <li>• <span className="text-on-surface">Live SoDEX balances</span> priced via /markets/tickers</li>
-                <li>• <span className="text-on-surface">One-click SSI baskets</span> from SoSoValue Index API</li>
-                <li>• <span className="text-on-surface">Market Pulse</span> — live tickers + featured news</li>
-                <li>• 4-step <span className="text-on-surface">onboarding checklist</span></li>
-                <li>• Expanded 20+ token universe with WSOSO + SOSO</li>
-                <li>• Weighted keyword classifier — distinct baskets per thesis</li>
-                <li>• 90-day backtest with Sharpe / Sortino / max DD</li>
-                <li>• 1,000-path Monte Carlo with VaR &amp; CVaR</li>
-                <li>• Per-wallet basket persistence + realised tracking</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
 
       {/* Error toast — no silent failures */}
@@ -396,7 +497,12 @@ export default function AppPage() {
         </div>
       )}
 
-      <ProductTour forceOpen={tourOpen} onClose={() => setTourOpen(false)} />
+      <ShortcutSheet open={sheetOpen} onClose={() => setSheetOpen(false)} shortcuts={deskShortcuts} />
+
+      {/* The overlay tour targets Desk-mode anchors; Guided mode IS the tour. */}
+      {(isDesk || tourOpen) && (
+        <ProductTour forceOpen={tourOpen} onClose={() => setTourOpen(false)} />
+      )}
     </>
   );
 }
