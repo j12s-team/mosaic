@@ -10,14 +10,14 @@ import {
   listBaskets,
   predictedVsRealised,
   syncWithServer,
-  isServerMode,
   setBasketPublic,
+  deleteBasketEverywhere,
   getRemoteMeta,
   type SavedBasket,
 } from "@/lib/storage";
 import { seedHouseBasketsIfNeeded } from "@/lib/houseBaskets";
 import { useChartColors, tooltipStyle } from "@/lib/chartColors";
-import { Bookmark, ChevronDown, ChevronRight, Sparkles, Globe, Link2, CloudUpload } from "lucide-react";
+import { Bookmark, ChevronDown, ChevronRight, Sparkles, Globe, Link2, CloudUpload, Trash2, RotateCcw } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -35,6 +35,7 @@ export function MyBaskets() {
   const [cloud, setCloud] = useState(false);
   const [publicSlugs, setPublicSlugs] = useState<Record<string, string | null>>({});
   const [copied, setCopied] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   function refresh() {
     setBaskets(listBaskets(owner));
@@ -81,6 +82,29 @@ export function MyBaskets() {
       else next[basketId] = slug;
       return next;
     });
+  }
+
+  async function removeBasket(basketId: string) {
+    if (confirmingDelete !== basketId) {
+      setConfirmingDelete(basketId);
+      setTimeout(() => setConfirmingDelete((c) => (c === basketId ? null : c)), 4000);
+      return;
+    }
+    setConfirmingDelete(null);
+    await deleteBasketEverywhere(owner, basketId);
+    setPublicSlugs((prev) => {
+      const next = { ...prev };
+      delete next[basketId];
+      return next;
+    });
+    refresh();
+  }
+
+  function restoreDemoBaskets() {
+    // Clear the seed flag so the seeder runs again, then reseed + refresh.
+    localStorage.removeItem("mosaic.house.seeded.v2");
+    seedHouseBasketsIfNeeded();
+    refresh();
   }
 
   async function copyPublicLink(basketId: string) {
@@ -146,6 +170,16 @@ export function MyBaskets() {
             <p className="mt-2 text-[11px]">
               Owner: <span className="font-mono">{owner === HOUSE_OWNER ? "house (unconnected)" : owner.slice(0, 6) + "…" + owner.slice(-4)}</span>
             </p>
+            {owner === HOUSE_OWNER && (
+              <button
+                type="button"
+                onClick={restoreDemoBaskets}
+                className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full border border-outline px-3 py-1 text-[11px] text-on-surface-variant transition hover:text-on-surface"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Restore demo baskets
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -236,8 +270,22 @@ export function MyBaskets() {
                   <div className="text-[10px] text-on-surface-variant">
                     on {formatUSD(b.execution.notionalUsd)}
                   </div>
+                  <div className="mt-2 flex justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => removeBasket(b.basket.id)}
+                      title="Permanently delete this basket and its history"
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition ${
+                        confirmingDelete === b.basket.id
+                          ? "border-transparent bg-error-container text-on-error-container"
+                          : "border-outline text-on-surface-variant hover:text-error"
+                      }`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      {confirmingDelete === b.basket.id ? "confirm delete?" : "remove"}
+                    </button>
                   {cloud && (
-                    <div className="mt-2 flex justify-end gap-1">
+                    <>
                       <button
                         type="button"
                         onClick={() => togglePublic(b.basket.id)}
@@ -266,8 +314,9 @@ export function MyBaskets() {
                           {copied === b.basket.id ? "copied!" : "link"}
                         </button>
                       )}
-                    </div>
+                    </>
                   )}
+                  </div>
                 </div>
               </div>
 

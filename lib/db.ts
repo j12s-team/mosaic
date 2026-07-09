@@ -188,6 +188,20 @@ export async function dbCloseBasket(owner: string, basketId: string): Promise<vo
     WHERE id = ${basketId} AND owner = ${norm(owner)}`;
 }
 
+/** Permanently delete a basket + dependent rows (owner-scoped). */
+export async function dbDeleteBasket(owner: string, basketId: string): Promise<boolean> {
+  await ensureSchema();
+  const q = sql();
+  const rows = await q`
+    DELETE FROM baskets WHERE id = ${basketId} AND owner = ${norm(owner)} RETURNING id`;
+  if (!rows.length) return false;
+  await q`DELETE FROM snapshots WHERE basket_id = ${basketId}`;
+  await q`DELETE FROM fills WHERE basket_id = ${basketId}`;
+  await q`DELETE FROM proposals WHERE basket_id = ${basketId}`;
+  await dbAudit(norm(owner), "basket-deleted", { basketId });
+  return true;
+}
+
 function slugify(input: string): string {
   return input
     .toLowerCase()

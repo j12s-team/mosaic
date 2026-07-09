@@ -66,11 +66,16 @@ export async function GET() {
       changePct: idx.changePct ?? 0,
     }));
 
+  // Honest sourcing: only claim "live" when at least one price actually came
+  // from SoSoValue (vs the curated seed table).
+  const live = tickers.some((t) => t.source === "sosovalue");
+
   return NextResponse.json({
     tickers,
     ssiMovers,
     news: news.slice(0, 5),
-    priceSource: "SoSoValue token metrics",
+    live,
+    priceSource: live ? "SoSoValue market snapshots" : "curated demo data",
     fetchedAt: new Date().toISOString(),
   });
 }

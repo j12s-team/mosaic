@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { dbEnabled, dbCloseBasket, dbSetPublic } from "@/lib/db";
+import { dbEnabled, dbCloseBasket, dbSetPublic, dbDeleteBasket } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +38,30 @@ export async function PATCH(
   } catch (err) {
     return NextResponse.json(
       { error: "update failed", detail: (err as Error).message },
+      { status: 503 },
+    );
+  }
+}
+
+/** DELETE /api/baskets/[id]?owner=… — permanent, owner-scoped, cascades. */
+export async function DELETE(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  if (!dbEnabled()) {
+    return NextResponse.json({ error: "persistence disabled" }, { status: 503 });
+  }
+  const { id } = await ctx.params;
+  const owner = new URL(req.url).searchParams.get("owner");
+  if (!owner) return NextResponse.json({ error: "owner required" }, { status: 400 });
+  try {
+    const ok = await dbDeleteBasket(owner, id);
+    return ok
+      ? NextResponse.json({ ok: true })
+      : NextResponse.json({ error: "not found" }, { status: 404 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "delete failed", detail: (err as Error).message },
       { status: 503 },
     );
   }

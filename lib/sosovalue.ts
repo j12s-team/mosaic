@@ -18,9 +18,86 @@ import type { FlowDatum, NewsItem } from "./types";
 import { MOCK_FLOWS, MOCK_NEWS, MOCK_TOKENS } from "./mock";
 
 const BASE_URL = "https://openapi.sosovalue.com";
+/** Documented API base (SoSoValue API docs). */
+const V1 = "/openapi/v1";
 
 function useMocks() {
   return process.env.MOSAIC_USE_MOCKS === "true" || !process.env.SOSOVALUE_API_KEY;
+}
+
+/** Some deployments wrap responses in { code, data }; others return raw. */
+function unwrap<T>(raw: unknown): T {
+  const r = raw as { code?: number; data?: unknown };
+  if (r && typeof r === "object" && "data" in r) return r.data as T;
+  return raw as T;
+}
+
+// ---------------------------------------------------------------------------
+// Currency id resolution — /currencies gives { currency_id, symbol, name };
+// market snapshots & klines are keyed by currency_id. Cached ~1h.
+// ---------------------------------------------------------------------------
+
+interface CurrencyRow {
+  currency_id: string | number;
+  symbol: string;
+  name?: string;
+}
+
+let currencyCache: { at: number; map: Map<string, CurrencyRow> } | null = null;
+
+async function currencyMap(): Promise<Map<string, CurrencyRow>> {
+  if (currencyCache && Date.now() - currencyCache.at < 3_600_000) return currencyCache.map;
+  const rows = unwrap<CurrencyRow[]>(await call<unknown>(`${V1}/currencies`));
+  const map = new Map<string, CurrencyRow>();
+  if (Array.isArray(rows)) {
+    for (const r of rows) {
+      if (r?.symbol) map.set(String(r.symbol).toUpperCase(), r);
+    }
+  }
+  currencyCache = { at: Date.now(), map };
+  return map;
+}
+
+interface MarketSnapshot {
+  price?: number | string;
+  change_pct_24h?: number | string;
+  marketcap?: number | string;
+  [k: string]: unknown;
+}
+
+async function marketSnapshot(sym: string): Promise<MarketSnapshot | null> {
+  const map = await currencyMap();
+  const row = map.get(sym.toUpperCase());
+  if (!row) return null;
+  return unwrap<MarketSnapshot>(
+    await call<unknown>(`${V1}/currencies/${row.currency_id}/market-snapshot`),
+  );
+}
+
+/** N-day price momentum from daily klines (fraction, e.g. 0.12 = +12%). */
+async function klineMomentum(sym: string, days: number): Promise<number | null> {
+  try {
+    const map = await currencyMap();
+    const row = map.get(sym.toUpperCase());
+    if (!row) return null;
+    const rows = unwrap<Array<{ close?: number | string; timestamp?: number }>>(
+      await call<unknown>(`${V1}/currencies/${row.currency_id}/klines?interval=1d&limit=${days + 1}`),
+    );
+    if (!Array.isArray(rows) || rows.length < 2) return null;
+    const first = Number(rows[0]?.close);
+    const last = Number(rows[rows.length - 1]?.close);
+    if (!first || !last) return null;
+    return +(last / first - 1).toFixed(4);
+  } catch {
+    return null;
+  }
+}
+
+/** The API reports percentage fields as percent numbers (1.82 = +1.82%). */
+function pctToFraction(v: unknown): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  return +(n / 100).toFixed(6);
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -50,16 +127,25 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
  * NewsItem shape. We accept many field-name variants because the docs and
  * production responses diverge.
  */
+function stripHtml(input: unknown): string {
+  return String(input ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function normalizeNewsItem(it: any): NewsItem | null {
   if (!it || !(it.title || it.headline || it.name)) return null;
+  const matched = (it.matched_currencies ?? it.relatedTickers ?? it.currencies ?? it.tokens ?? it.tags ?? [])
+    .map((c: any) => (typeof c === "string" ? c : c?.symbol ?? c?.ticker ?? ""))
+    .filter(Boolean)
+    .map((c: string) => c.toUpperCase());
   return {
     id: String(it.id ?? it.newsId ?? it.uid ?? it.url ?? Math.random()),
-    title: it.title ?? it.headline ?? it.name,
-    summary: it.summary ?? it.description ?? it.content ?? it.brief ?? "",
-    source: it.source ?? it.mediaName ?? it.publisher ?? "SoSoValue",
-    publishedAt: it.publishTime ?? it.publishedAt ?? it.createTime ?? it.timestamp ?? new Date().toISOString(),
+    title: stripHtml(it.title ?? it.headline ?? it.name),
+    summary: stripHtml(it.summary ?? it.description ?? it.brief ?? it.content ?? "").slice(0, 280),
+    source: it.author ?? it.source ?? it.mediaName ?? it.publisher ?? it.media_info?.name ?? "SoSoValue",
+    publishedAt:
+      it.release_time ?? it.publishTime ?? it.publishedAt ?? it.createTime ?? it.timestamp ?? new Date().toISOString(),
     sentiment: typeof it.sentiment === "number" ? it.sentiment : undefined,
-    tickers: it.relatedTickers ?? it.currencies ?? it.tokens ?? it.tags ?? [],
+    tickers: matched,
     url: it.url ?? it.link,
   };
 }
@@ -80,6 +166,14 @@ export async function getFeaturedNews(opts: { currency?: string; pageSize?: numb
   // paths. We try each in order and use the first that returns a non-empty
   // list. Each call is wrapped so one bad endpoint doesn't kill the chain.
   const candidates: Array<{ path: string; pick: (r: any) => any[] }> = [
+    {
+      // Documented endpoint (SoSoValue API docs): page_size min 20.
+      path: `${V1}/news/featured?${new URLSearchParams({
+        page: "1",
+        page_size: String(Math.max(20, pageSize)),
+      })}`,
+      pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.list ?? r?.data ?? r ?? [],
+    },
     {
       path: `/api/v1/news/featured/currency?${new URLSearchParams({
         ...(opts.currency ? { currency: opts.currency } : {}),
@@ -134,6 +228,15 @@ export async function getEtfFlows(asset: string): Promise<FlowDatum[]> {
 
   const candidates: Array<{ path: string; pick: (r: any) => any[] }> = [
     {
+      // Documented endpoint (SoSoValue API docs).
+      path: `${V1}/etfs/summary-history?${new URLSearchParams({
+        symbol: upper,
+        country_code: "US",
+        limit: "60",
+      })}`,
+      pick: (r) => r?.data?.list ?? r?.data ?? r?.list ?? r ?? [],
+    },
+    {
       path: `/api/v1/etf/spot/${asset.toLowerCase()}/flow`,
       pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.data ?? [],
     },
@@ -154,13 +257,13 @@ export async function getEtfFlows(asset: string): Promise<FlowDatum[]> {
       if (!Array.isArray(rows) || rows.length === 0) continue;
       let cum = 0;
       const out: FlowDatum[] = rows.map((it: any) => {
-        const inflow = Number(it.netInflow ?? it.netFlow ?? it.totalNetInflow ?? it.dailyNetInflow ?? 0);
+        const inflow = Number(it.total_net_inflow ?? it.netInflow ?? it.netFlow ?? it.totalNetInflow ?? it.dailyNetInflow ?? 0);
         cum += inflow;
         return {
           symbol: upper,
           date: it.date ?? it.tradingDay ?? it.timestamp ?? "",
           netInflowUsd: inflow,
-          cumulativeUsd: cum,
+          cumulativeUsd: Number(it.cum_net_inflow ?? cum),
         };
       });
       if (out.some((f) => f.netInflowUsd !== 0)) return out;
@@ -268,11 +371,50 @@ const MOCK_SSI_LIBRARY: SsiIndex[] = [
   },
 ];
 
+/** "ssimag7" → "MAG7.ssi" for display; pass through already-styled symbols. */
+function ssiDisplaySymbol(ticker: string): string {
+  if (ticker.toLowerCase().endsWith(".ssi")) return ticker;
+  const bare = ticker.toLowerCase().startsWith("ssi") ? ticker.slice(3) : ticker;
+  return `${bare.toUpperCase()}.ssi`;
+}
+
 export async function listSsiIndexes(): Promise<SsiIndex[]> {
   if (useMocks()) return MOCK_SSI_LIBRARY;
+  // Documented endpoints: GET /indices → bare ticker array; per-ticker
+  // market snapshots carry price + 24h change (percent).
+  try {
+    const tickers = unwrap<string[]>(await call<unknown>(`${V1}/indices`));
+    if (Array.isArray(tickers) && tickers.length > 0 && typeof tickers[0] === "string") {
+      const subset = tickers.slice(0, 12);
+      const rows = await Promise.all(
+        subset.map(async (t): Promise<SsiIndex | null> => {
+          try {
+            const snap = unwrap<Record<string, unknown>>(
+              await call<unknown>(`${V1}/indices/${t}/market-snapshot`),
+            );
+            return {
+              symbol: ssiDisplaySymbol(t),
+              name: ssiDisplaySymbol(t).replace(".ssi", " SSI"),
+              changePct: pctToFraction(snap?.["24h_change_pct"] ?? snap?.change_pct_24h ?? 0),
+              constituents: [],
+            };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const live = rows.filter((x): x is SsiIndex => Boolean(x));
+      if (live.length > 0) return live;
+    }
+  } catch (e) {
+    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+      console.warn("[sosovalue] /indices failed:", (e as Error).message);
+    }
+  }
+  // Legacy path, then mocks.
   try {
     const raw = await call<{ data: { list: any[] } }>(`/api/v1/index/list`);
-    return (raw.data?.list ?? []).map((idx: any) => ({
+    const rows = (raw.data?.list ?? []).map((idx: any) => ({
       symbol: idx.symbol,
       name: idx.name ?? idx.symbol,
       description: idx.description,
@@ -282,15 +424,43 @@ export async function listSsiIndexes(): Promise<SsiIndex[]> {
         weight: Number(c.weight),
       })),
     }));
-  } catch (e) {
-    console.warn("[sosovalue] listSsiIndexes fell back to mocks:", (e as Error).message);
-    return MOCK_SSI_LIBRARY;
+    if (rows.length > 0) return rows;
+  } catch {
+    /* fall through */
   }
+  console.warn("[sosovalue] listSsiIndexes fell back to mocks");
+  return MOCK_SSI_LIBRARY;
 }
 
 export async function getSsiIndex(symbol: string): Promise<SsiIndex | null> {
-  if (useMocks()) {
-    return MOCK_SSI_LIBRARY.find((s) => s.symbol.toLowerCase() === symbol.toLowerCase()) ?? null;
+  const mock = MOCK_SSI_LIBRARY.find((s) => s.symbol.toLowerCase() === symbol.toLowerCase()) ?? null;
+  if (useMocks()) return mock;
+  // Documented constituents endpoint (composition needed for basket building).
+  const ticker = symbol.toLowerCase().endsWith(".ssi")
+    ? `ssi${symbol.slice(0, -4).toLowerCase()}`
+    : symbol;
+  try {
+    const rows = unwrap<Array<{ symbol?: string; ticker?: string; weight?: number | string }>>(
+      await call<unknown>(`${V1}/indices/${ticker}/constituents`),
+    );
+    if (Array.isArray(rows) && rows.length > 0) {
+      const constituents = rows
+        .map((c) => ({
+          symbol: String(c.symbol ?? c.ticker ?? "").toUpperCase(),
+          weight: Number(c.weight ?? 0) > 1 ? Number(c.weight) / 100 : Number(c.weight ?? 0),
+        }))
+        .filter((c) => c.symbol && c.weight > 0);
+      if (constituents.length > 0) {
+        return {
+          symbol: ssiDisplaySymbol(ticker),
+          name: `${ssiDisplaySymbol(ticker).replace(".ssi", "")} SSI`,
+          changePct: mock?.changePct,
+          constituents,
+        };
+      }
+    }
+  } catch {
+    /* fall through to legacy + mock */
   }
   try {
     const raw = await call<{ data: any }>(`/api/v1/index/${symbol}`);
@@ -305,7 +475,7 @@ export async function getSsiIndex(symbol: string): Promise<SsiIndex | null> {
       })),
     };
   } catch {
-    return MOCK_SSI_LIBRARY.find((s) => s.symbol.toLowerCase() === symbol.toLowerCase()) ?? null;
+    return mock;
   }
 }
 
@@ -341,6 +511,31 @@ export async function getTokenMetrics(symbol: string): Promise<TokenMetrics | nu
   const sym = symbol.toUpperCase();
   const fallback = mockMetricsFor(sym);
   if (useMocks()) return fallback;
+  // Documented path first: live price + market cap from the market snapshot,
+  // 30d momentum from daily klines, qualitative fields (sentiment, vol,
+  // liquidity, themes) from the curated seed row — no API source for those.
+  try {
+    const snap = await marketSnapshot(sym);
+    const price = Number(snap?.price);
+    if (snap && Number.isFinite(price) && price > 0) {
+      const momentum = await klineMomentum(sym, 30);
+      return {
+        symbol: sym,
+        name: fallback?.name ?? sym,
+        price,
+        marketCap: Number(snap.marketcap ?? fallback?.marketCap ?? 0),
+        momentum30d: momentum ?? fallback?.momentum30d ?? 0,
+        sentiment: fallback?.sentiment ?? 0,
+        volatility: fallback?.volatility ?? 0.6,
+        liquidityScore: fallback?.liquidityScore ?? 0.5,
+        themes: fallback?.themes ?? [],
+      };
+    }
+  } catch (e) {
+    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+      console.warn(`[sosovalue] snapshot metrics for ${sym} failed:`, (e as Error).message);
+    }
+  }
   try {
     const raw = await call<{ data: any }>(`/api/v1/token/${sym}/metrics`);
     const d = raw?.data;
@@ -423,6 +618,25 @@ export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
 
   const results = await Promise.all(
     upper.map(async (s): Promise<LivePrice | null> => {
+      // Documented path: /currencies/{id}/market-snapshot.
+      try {
+        const snap = await marketSnapshot(s);
+        const price = Number(snap?.price);
+        if (snap && Number.isFinite(price) && price > 0) {
+          return {
+            symbol: s,
+            name: seedPrice(s)?.name ?? s,
+            price,
+            changePct24h: pctToFraction(snap.change_pct_24h ?? (snap as any)["24h_change_pct"] ?? 0),
+            source: "sosovalue",
+          };
+        }
+      } catch (e) {
+        if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+          console.warn(`[sosovalue] market-snapshot for ${s} failed:`, (e as Error).message);
+        }
+      }
+      // Legacy guess, then curated seed.
       try {
         const raw = await call<any>(`/api/v1/token/${s}/metrics`);
         const d = raw?.data ?? raw;
@@ -436,10 +650,7 @@ export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
           ),
           source: "sosovalue",
         };
-      } catch (e) {
-        if (process.env.MOSAIC_DEBUG_SODEX === "1") {
-          console.warn(`[sosovalue] live price for ${s} fell back to seed`, (e as Error).message);
-        }
+      } catch {
         return seedPrice(s);
       }
     }),

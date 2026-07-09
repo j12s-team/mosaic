@@ -28,7 +28,7 @@ interface SsiMover {
  * Auto-refreshes every 60s.
  */
 export function MarketPulse() {
-  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[]; ssiMovers?: SsiMover[] } | null>(null);
+  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[]; ssiMovers?: SsiMover[]; live?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,7 +61,13 @@ export function MarketPulse() {
           <Badge variant="brand" className="text-[10px]">
             SoDEX + SoSoValue
           </Badge>
-          <LivePulse label="streaming" className="ml-auto" />
+          {data?.live ? (
+            <LivePulse label="streaming" className="ml-auto" />
+          ) : (
+            <span className="ml-auto rounded-full border border-outline px-2 py-0.5 text-[10px] text-on-surface-variant">
+              demo data
+            </span>
+          )}
         </CardTitle>
         <p className="mt-1 text-[11px] text-on-surface-variant">
           Top 24h movers priced from{" "}

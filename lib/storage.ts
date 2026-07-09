@@ -82,6 +82,14 @@ export function closeBasket(owner: string, basketId: string) {
   write(key, all);
 }
 
+/** Permanently remove a basket + its snapshots from the local cache. */
+export function deleteBasket(owner: string, basketId: string) {
+  const bKey = keyFor(owner, "baskets");
+  write(bKey, read<SavedBasket>(bKey).filter((b) => b.basket.id !== basketId));
+  const sKey = keyFor(owner, "snapshots");
+  write(sKey, read<BasketSnapshot>(sKey).filter((s) => s.basketId !== basketId));
+}
+
 export function getSnapshots(owner: string, basketId: string): BasketSnapshot[] {
   return read<BasketSnapshot>(keyFor(owner, "snapshots"))
     .filter((s) => s.basketId === basketId)
@@ -245,6 +253,16 @@ export async function closeBasketEverywhere(owner: string, basketId: string): Pr
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ owner, action: "close" }),
+    }).catch(() => undefined);
+  }
+}
+
+/** Permanently delete locally and, when the server backend is active, remotely. */
+export async function deleteBasketEverywhere(owner: string, basketId: string): Promise<void> {
+  deleteBasket(owner, basketId);
+  if (await probeServer()) {
+    await fetch(`/api/baskets/${encodeURIComponent(basketId)}?owner=${encodeURIComponent(owner)}`, {
+      method: "DELETE",
     }).catch(() => undefined);
   }
 }
