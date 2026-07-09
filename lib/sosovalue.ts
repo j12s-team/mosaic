@@ -144,8 +144,9 @@ function ttlFor(path: string): number {
   if (path.includes("/currencies") && !path.includes("market-snapshot") && !path.includes("klines")) {
     return 60 * 60_000; // symbol list: 1h
   }
-  if (path.includes("klines")) return 15 * 60_000; // momentum inputs: 15m
-  return 60_000; // snapshots / news / indices: 1m
+  if (path.includes("klines")) return 30 * 60_000; // momentum inputs: 30m
+  if (path.includes("/news")) return 10 * 60_000; // headlines: 10m
+  return 5 * 60_000; // snapshots / indices: 5m
 }
 
 /** Run `fn` over items with at most `limit` in flight. */
@@ -170,23 +171,33 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (cached && Date.now() - cached.at < ttlFor(path)) {
     return cached.data as T;
   }
+  // Stale-on-error: a last-good response beats a seed fallback, always.
+  const stale = cached ? (cached.data as T) : undefined;
   if (Date.now() < cooldownUntil) {
+    if (stale !== undefined) return stale;
     throw new Error("SoSoValue rate-limit cooldown — serving fallbacks");
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "x-soso-api-key": key,
-      ...(init?.headers ?? {}),
-    },
-    ...({ next: { revalidate: 30 } } as Record<string, unknown>),
-  } as RequestInit);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        "x-soso-api-key": key,
+        ...(init?.headers ?? {}),
+      },
+      ...({ next: { revalidate: 30 } } as Record<string, unknown>),
+    } as RequestInit);
+  } catch (err) {
+    if (stale !== undefined) return stale;
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 429) {
-      cooldownUntil = Date.now() + 30_000;
+      cooldownUntil = Date.now() + 60_000;
     }
+    if (stale !== undefined) return stale;
     throw new Error(`SoSoValue ${res.status}: ${await res.text()}`);
   }
   const data = (await res.json()) as T;
@@ -246,26 +257,8 @@ export async function getFeaturedNews(opts: { currency?: string; pageSize?: numb
       })}`,
       pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.list ?? r?.data ?? r ?? [],
     },
-    {
-      path: `/api/v1/news/featured/currency?${new URLSearchParams({
-        ...(opts.currency ? { currency: opts.currency } : {}),
-        pageSize: String(pageSize),
-      })}`,
-      pick: (r) => r?.data?.list ?? r?.data?.items ?? [],
-    },
-    {
-      path: `/api/v1/news/list?${new URLSearchParams({ pageSize: String(pageSize) })}`,
-      pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.data ?? [],
-    },
-    {
-      path: `/openapi/v2/news/list?${new URLSearchParams({ pageSize: String(pageSize) })}`,
-      pick: (r) => r?.data?.list ?? r?.data ?? [],
-    },
-    {
-      path: `/api/v1/news/featured?${new URLSearchParams({ pageSize: String(pageSize) })}`,
-      pick: (r) => r?.data?.list ?? r?.data ?? [],
-    },
   ];
+
 
   for (const c of candidates) {
     try {
@@ -308,19 +301,8 @@ export async function getEtfFlows(asset: string): Promise<FlowDatum[]> {
       })}`,
       pick: (r) => r?.data?.list ?? r?.data ?? r?.list ?? r ?? [],
     },
-    {
-      path: `/api/v1/etf/spot/${asset.toLowerCase()}/flow`,
-      pick: (r) => r?.data?.list ?? r?.data?.items ?? r?.data ?? [],
-    },
-    {
-      path: `/api/v1/etf/spot/${asset.toLowerCase()}/historical`,
-      pick: (r) => r?.data?.list ?? r?.data ?? [],
-    },
-    {
-      path: `/openapi/v2/etf/currentEtfDataMetrics?type=${asset.toLowerCase()}`,
-      pick: (r) => r?.data?.list ?? [],
-    },
   ];
+
 
   for (const c of candidates) {
     try {
@@ -606,29 +588,9 @@ export async function getTokenMetrics(symbol: string): Promise<TokenMetrics | nu
       console.warn(`[sosovalue] snapshot metrics for ${sym} failed:`, (e as Error).message);
     }
   }
-  try {
-    const raw = await call<{ data: any }>(`/api/v1/token/${sym}/metrics`);
-    const d = raw?.data;
-    if (!d || (typeof d.price === "undefined" && typeof d.marketCap === "undefined")) {
-      return fallback;
-    }
-    return {
-      symbol: sym,
-      name: d.name ?? fallback?.name ?? sym,
-      price: Number(d.price ?? fallback?.price ?? 0),
-      marketCap: Number(d.marketCap ?? fallback?.marketCap ?? 0),
-      momentum30d: Number(d.momentum30d ?? d.priceChangePct30d ?? fallback?.momentum30d ?? 0),
-      sentiment: Number(d.sentiment ?? fallback?.sentiment ?? 0),
-      volatility: Number(d.volatility ?? fallback?.volatility ?? 0.5),
-      liquidityScore: Number(d.liquidityScore ?? fallback?.liquidityScore ?? 0.5),
-      themes: (d.themes ?? fallback?.themes ?? []) as string[],
-    };
-  } catch (e) {
-    if (process.env.MOSAIC_DEBUG_SODEX === "1") {
-      console.warn(`[sosovalue] getTokenMetrics(${sym}) fell back:`, (e as Error).message);
-    }
-    return fallback;
-  }
+  // Legacy /api/v1/token path removed — confirmed 404 on the live API; the
+  // curated seed row is the fallback when snapshots are unavailable.
+  return fallback;
 }
 
 export async function getCandidateUniverse(): Promise<TokenMetrics[]> {
@@ -705,23 +667,7 @@ export async function getLivePrices(symbols: string[]): Promise<LivePrice[]> {
           console.warn(`[sosovalue] market-snapshot for ${s} failed:`, (e as Error).message);
         }
       }
-      // Legacy guess, then curated seed.
-      try {
-        const raw = await call<any>(`/api/v1/token/${s}/metrics`);
-        const d = raw?.data ?? raw;
-        if (!d || typeof d.price === "undefined") return seedPrice(s);
-        return {
-          symbol: s,
-          name: d.name ?? seedPrice(s)?.name ?? s,
-          price: Number(d.price),
-          changePct24h: Number(
-            d.changePct24h ?? d.priceChangePct24h ?? d.priceChange24h ?? d.change24h ?? 0,
-          ),
-          source: "sosovalue",
-        };
-      } catch {
-        return seedPrice(s);
-      }
+      return seedPrice(s);
     });
 
   const out = results.filter((x): x is LivePrice => Boolean(x));

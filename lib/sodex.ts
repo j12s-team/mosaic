@@ -507,6 +507,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
     };
   }
 
+  console.info(`[sodex] LIVE ORDER → POST ${baseUrl()}/trade/orders/batch ${payloadJson}`);
   const res = await fetch(`${baseUrl()}/trade/orders/batch`, {
     method: "POST",
     headers: {
@@ -519,6 +520,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
     cache: "no-store",
   });
   const bodyText = await res.text();
+  console.info(`[sodex] LIVE ORDER ← HTTP ${res.status}: ${bodyText.slice(0, 300)}`);
   if (!res.ok) {
     throw new Error(`SoDEX order HTTP ${res.status}: ${bodyText.slice(0, 300)}`);
   }

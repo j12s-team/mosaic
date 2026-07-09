@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (err) {
+      console.warn(`[execute] leg ${leg.market} failed:`, (err as Error).message);
       legErrors.push({ market: leg.market, error: (err as Error).message });
     }
   }
