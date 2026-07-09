@@ -57,14 +57,14 @@ export default function SharedBasketView() {
       <main className="mx-auto max-w-5xl px-6 pt-10 pb-24">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-brand-500">
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary">
               <Share2 className="h-3 w-3" />
               Shared basket
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">
               A basket someone built with Mosaic
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-on-surface-variant">
               Read-only view. Build your own with one click.
             </p>
           </div>
@@ -77,7 +77,7 @@ export default function SharedBasketView() {
 
         {error && (
           <Card>
-            <CardContent className="p-8 text-center text-sm text-muted-foreground">
+            <CardContent className="p-8 text-center text-sm text-on-surface-variant">
               {error}
             </CardContent>
           </Card>

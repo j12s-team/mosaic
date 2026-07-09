@@ -2,30 +2,46 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
+/**
+ * M3 buttons (DESIGN.md `button-filled`): 40px tall, fully rounded,
+ * label-lg typography, 24px horizontal padding. Filled buttons gain
+ * elevation-1 on hover while keeping the primary fill.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
+        filled:
+          "bg-primary text-on-primary hover:shadow-elevation-1 hover:bg-primary/90 active:bg-primary/85",
+        tonal:
+          "bg-secondary-container text-on-secondary-container hover:shadow-elevation-1 hover:bg-secondary-container/80",
+        elevated:
+          "bg-surface-container-low text-primary shadow-elevation-1 hover:shadow-elevation-2 hover:bg-surface-container",
+        outlined:
+          "border border-outline bg-transparent text-primary hover:bg-primary/10",
+        text: "text-primary hover:bg-primary/10",
+        error: "bg-error text-on-error hover:shadow-elevation-1 hover:bg-error/90",
+        link: "text-primary underline-offset-4 hover:underline",
+        // Legacy aliases (shadcn-era names) — resolve to M3 equivalents.
         default:
-          "bg-brand-500 text-white hover:bg-brand-400 shadow-[0_0_0_1px_rgba(49,158,255,0.3),0_8px_24px_-8px_rgba(49,158,255,0.6)]",
+          "bg-primary text-on-primary hover:shadow-elevation-1 hover:bg-primary/90 active:bg-primary/85",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-accent border border-border",
+          "bg-secondary-container text-on-secondary-container hover:shadow-elevation-1 hover:bg-secondary-container/80",
         outline:
-          "border border-border bg-transparent hover:bg-accent hover:text-accent-foreground",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+          "border border-outline bg-transparent text-primary hover:bg-primary/10",
+        ghost: "text-primary hover:bg-primary/10",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        link: "text-brand-600 dark:text-brand-300 underline-offset-4 hover:underline",
+          "bg-error text-on-error hover:shadow-elevation-1 hover:bg-error/90",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-12 rounded-lg px-6 text-base",
-        icon: "h-9 w-9",
+        default: "h-10 px-6", // 40px per DESIGN.md
+        sm: "h-8 px-4",
+        lg: "h-12 px-8",
+        icon: "h-10 w-10",
       },
     },
-    defaultVariants: { variant: "default", size: "default" },
+    defaultVariants: { variant: "filled", size: "default" },
   }
 );
 

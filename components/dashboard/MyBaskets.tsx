@@ -74,16 +74,16 @@ export function MyBaskets() {
       <Card id="saved-baskets">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bookmark className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <Bookmark className="h-4 w-4 text-primary" />
             Your saved baskets
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-dashed border-border/60 bg-secondary/30 dark:bg-background/40 p-8 text-center text-sm text-muted-foreground">
-            <Sparkles className="mx-auto h-5 w-5 text-brand-600/60 dark:text-brand-300/60" />
+          <div className="rounded-md border border-dashed border-outline-variant bg-surface-container p-8 text-center text-sm text-on-surface-variant">
+            <Sparkles className="mx-auto h-5 w-5 text-primary/60" />
             <p className="mt-2">
               No saved baskets yet. Build one above and hit{" "}
-              <span className="font-medium text-foreground">Confirm &amp; execute</span> —
+              <span className="font-medium text-on-surface">Confirm &amp; execute</span> —
               we&apos;ll start snapshotting it for thesis-vs-realised tracking.
             </p>
             <p className="mt-2 text-[11px]">
@@ -99,10 +99,10 @@ export function MyBaskets() {
     <Card id="saved-baskets">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Bookmark className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+          <Bookmark className="h-4 w-4 text-primary" />
           Your saved baskets ({baskets.length})
         </CardTitle>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-on-surface-variant">
           Thesis, fills, and realised return — tracked since the moment you executed. Click a
           basket to expand the per-leg fills Mosaic routed through SoDEX.
         </p>
@@ -116,19 +116,19 @@ export function MyBaskets() {
             <div
               key={b.basket.id}
               id={`basket-${b.basket.id}`}
-              className="rounded-xl border border-border/40 bg-secondary/30 dark:bg-background/40 p-4"
+              className="rounded-md border border-outline-variant bg-surface-container p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setExpanded((p) => ({ ...p, [b.basket.id]: !isOpen }))}
-                  className="-m-1 flex-1 rounded p-1 text-left transition hover:bg-white/5"
+                  className="-m-1 flex-1 rounded p-1 text-left transition hover:bg-surface-container-high"
                 >
                   <div className="flex items-center gap-2">
                     {isOpen ? (
-                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ChevronDown className="h-3.5 w-3.5 text-on-surface-variant" />
                     ) : (
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ChevronRight className="h-3.5 w-3.5 text-on-surface-variant" />
                     )}
                     <Badge variant={b.status === "active" ? "success" : "outline"}>
                       {b.status}
@@ -136,7 +136,7 @@ export function MyBaskets() {
                     {b.basket.benchmark && (
                       <Badge variant="brand">vs {b.basket.benchmark.symbol}</Badge>
                     )}
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[11px] text-on-surface-variant">
                       {b.basket.constituents.length} legs · {pvr?.daysHeld ?? 0}d held
                     </span>
                   </div>
@@ -145,43 +145,43 @@ export function MyBaskets() {
                     {b.execution.fills.slice(0, 6).map((f) => (
                       <span
                         key={f.symbol}
-                        className="rounded-md border border-border/40 bg-card/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                        className="rounded-sm border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-mono text-[10px] text-on-surface-variant"
                       >
-                        {f.symbol} <span className="text-foreground">{(f.weight * 100).toFixed(0)}%</span>
+                        {f.symbol} <span className="text-on-surface">{(f.weight * 100).toFixed(0)}%</span>
                       </span>
                     ))}
                     {b.execution.fills.length > 6 && (
-                      <span className="rounded-md border border-border/40 bg-card/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                      <span className="rounded-sm border border-outline-variant bg-surface-container-low px-1.5 py-0.5 font-mono text-[10px] text-on-surface-variant">
                         +{b.execution.fills.length - 6} more
                       </span>
                     )}
                   </div>
                 </button>
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                     Realised
                   </div>
                   <div
                     className={`font-mono text-lg font-semibold ${
-                      realised >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                      realised >= 0 ? "text-success " : "text-error "
                     }`}
                   >
                     {formatPct(realised / 100, { signed: true })}
                   </div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-[10px] text-on-surface-variant">
                     on {formatUSD(b.execution.notionalUsd)}
                   </div>
                 </div>
               </div>
 
               {isOpen && (
-                <div className="mt-4 rounded-lg border border-border/40 bg-background/40 dark:bg-background/60">
-                  <div className="flex items-center justify-between border-b border-border/40 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="mt-4 rounded-md border border-outline-variant bg-surface-container">
+                  <div className="flex items-center justify-between border-b border-outline-variant px-3 py-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
                     <span>Executed fills · {new Date(b.execution.executedAt).toLocaleString()}</span>
                     <span>{formatUSD(b.execution.notionalUsd)} total</span>
                   </div>
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
                       <tr>
                         <th className="px-3 py-2">Asset</th>
                         <th className="px-3 py-2 text-right">Weight</th>
@@ -189,7 +189,7 @@ export function MyBaskets() {
                         <th className="px-3 py-2 text-right">Notional</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-outline-variant/60">
                       {b.execution.fills.map((f) => (
                         <tr key={f.symbol}>
                           <td className="px-3 py-2 font-medium">{f.symbol}</td>
@@ -210,7 +210,7 @@ export function MyBaskets() {
                       ))}
                     </tbody>
                   </table>
-                  <div className="border-t border-border/40 px-3 py-2 text-[10px] text-muted-foreground">
+                  <div className="border-t border-outline-variant px-3 py-2 text-[10px] text-on-surface-variant">
                     Fills recorded locally · realised PnL tracked from these entry prices.
                   </div>
                 </div>

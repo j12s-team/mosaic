@@ -41,9 +41,9 @@ export function WalletButton() {
   if (session) {
     return (
       <div className="flex items-center gap-2">
-        <div className="hidden items-center gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs md:flex">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          <span className="font-mono text-emerald-700 dark:text-emerald-200">{shortAddress(session.address)}</span>
+        <div className="hidden items-center gap-2 rounded-sm border border-success/20 bg-success/10 px-3 py-1.5 text-xs md:flex">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+          <span className="font-mono text-success">{shortAddress(session.address)}</span>
         </div>
         <Button size="icon" variant="ghost" onClick={onDisconnect} title="Disconnect" className="md:size-sm">
           <LogOut className="h-3.5 w-3.5" />
@@ -59,7 +59,7 @@ export function WalletButton() {
         <span className="hidden sm:inline">{busy ? "Signing…" : "Connect wallet"}</span>
       </Button>
       {error && (
-        <p className="max-w-[16rem] text-right text-[10px] text-red-600 dark:text-red-400">
+        <p className="max-w-[16rem] text-right text-[10px] text-error">
           {error}
         </p>
       )}

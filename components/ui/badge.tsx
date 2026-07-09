@@ -5,19 +5,23 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "outline" | "success" | "warning" | "danger" | "brand";
 }
 
+/**
+ * M3 chip-style labels: container role pairs, label-md typography,
+ * fully rounded (DESIGN.md shapes.full for tags).
+ */
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
   const styles = {
-    default: "bg-secondary text-secondary-foreground border-border",
-    outline: "border-border bg-transparent",
-    success: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-    warning: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-    danger: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
-    brand: "bg-brand-500/15 text-brand-700 dark:text-brand-200 border-brand-500/30",
+    default: "bg-secondary-container text-on-secondary-container border-transparent",
+    outline: "border-outline bg-transparent text-on-surface-variant",
+    success: "bg-success-container text-on-success-container border-transparent",
+    warning: "bg-warning-container text-on-warning-container border-transparent",
+    danger: "bg-error-container text-on-error-container border-transparent",
+    brand: "bg-primary-container text-on-primary-container border-transparent",
   }[variant];
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-label-md",
         styles,
         className
       )}

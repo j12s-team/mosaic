@@ -36,10 +36,10 @@ function Section({
   return (
     <section id={id} className="scroll-mt-24">
       <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-        <Icon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+        <Icon className="h-4 w-4 text-primary" />
         {title}
       </h2>
-      <div className="mt-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
+      <div className="mt-3 text-sm leading-relaxed text-on-surface-variant">{children}</div>
     </section>
   );
 }
@@ -68,10 +68,10 @@ function Row({
       </Badge>
     );
   return (
-    <tr className="border-t border-border/40 align-top">
-      <td className="py-3 pr-3 font-medium text-foreground">{surface}</td>
+    <tr className="border-t border-outline-variant align-top">
+      <td className="py-3 pr-3 font-medium text-on-surface">{surface}</td>
       <td className="py-3 pr-3">{badge}</td>
-      <td className="py-3 text-muted-foreground">{detail}</td>
+      <td className="py-3 text-on-surface-variant">{detail}</td>
     </tr>
   );
 }
@@ -88,15 +88,15 @@ function Endpoint({
   sample: string;
 }) {
   return (
-    <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
+    <div className="rounded-md border border-outline-variant bg-surface-container p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded bg-brand-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand-700 dark:text-brand-300">
+        <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
           {method}
         </span>
-        <code className="break-all font-mono text-xs text-foreground">{path}</code>
+        <code className="break-all font-mono text-xs text-on-surface">{path}</code>
       </div>
-      <p className="mt-1.5 text-[11px] text-muted-foreground">{note}</p>
-      <pre className="mt-2 overflow-x-auto rounded-md border border-border/40 bg-background/60 p-2 text-[10px] leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-[11px] text-on-surface-variant">{note}</p>
+      <pre className="mt-2 overflow-x-auto rounded-sm border border-outline-variant bg-surface-container p-2 text-[10px] leading-relaxed text-on-surface-variant">
         {sample}
       </pre>
     </div>
@@ -112,7 +112,7 @@ export default function JudgesPage() {
           <ShieldCheck className="h-3 w-3" /> For judges
         </Badge>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Judge&apos;s guide</h1>
-        <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+        <p className="mt-3 max-w-2xl text-base text-on-surface-variant">
           Everything you need to evaluate Mosaic in a minute — a click-by-click test script, what
           each number means, and an honest breakdown of which integrations are live, which are
           simulated, and why. No wallet, seed, or signup required.
@@ -142,11 +142,11 @@ export default function JudgesPage() {
                 ["See it persist", "The executed basket appears under My baskets with its fills; the realised-vs-thesis curve begins filling in. Reload — it's still there."],
               ].map(([t, d], i) => (
                 <li key={t} className="flex gap-3">
-                  <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-brand-500/15 font-mono text-xs font-semibold text-brand-700 dark:text-brand-300">
+                  <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-primary/15 font-mono text-xs font-semibold text-primary">
                     {i + 1}
                   </span>
                   <span>
-                    <span className="font-medium text-foreground">{t}.</span> {d}
+                    <span className="font-medium text-on-surface">{t}.</span> {d}
                   </span>
                 </li>
               ))}
@@ -156,22 +156,22 @@ export default function JudgesPage() {
           <Section id="look" icon={MousePointerClick} title="What to look for">
             <ul className="space-y-2">
               <li>
-                <span className="font-medium text-foreground">Distinct baskets per thesis.</span> A
+                <span className="font-medium text-on-surface">Distinct baskets per thesis.</span> A
                 memecoin prompt and a DeFi-bluechip prompt produce genuinely different constituents,
                 weights and risk scores — not one canned list.
               </li>
               <li>
-                <span className="font-medium text-foreground">Risk before the click.</span> Every
+                <span className="font-medium text-on-surface">Risk before the click.</span> Every
                 irreversible action is preceded by backtest + Monte Carlo + stress tests and an
                 explicit confirm gate. No market orders; IOC limits with a per-leg slippage cap.
               </li>
               <li>
-                <span className="font-medium text-foreground">Real data on the surface.</span> The
+                <span className="font-medium text-on-surface">Real data on the surface.</span> The
                 landing page and Market Pulse pull live SoSoValue news, ETF flows and SSI moves; the
                 portfolio reads live SoDEX testnet balances.
               </li>
               <li>
-                <span className="font-medium text-foreground">Honest labelling.</span> Anything
+                <span className="font-medium text-on-surface">Honest labelling.</span> Anything
                 simulated says so on the screen — see the breakdown below.
               </li>
             </ul>
@@ -182,9 +182,9 @@ export default function JudgesPage() {
               Mosaic is wired to real endpoints and degrades gracefully so a demo never falls over.
               Here is exactly what is real:
             </p>
-            <div className="mt-4 overflow-x-auto rounded-xl border border-border/40 bg-card/60 dark:bg-card/30 p-1">
+            <div className="mt-4 overflow-x-auto rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-1">
               <table className="w-full text-left text-xs">
-                <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <thead className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2">Surface</th>
                     <th className="px-2 py-2">Status</th>
@@ -222,7 +222,7 @@ export default function JudgesPage() {
             </div>
             <p className="mt-3 text-[11px]">
               You can verify the live calls yourself in real time on the{" "}
-              <Link href="/diag" className="text-brand-600 underline-offset-4 hover:underline dark:text-brand-300">
+              <Link href="/diag" className="text-primary underline-offset-4 hover:underline">
                 diagnostics page
               </Link>
               .
@@ -232,7 +232,7 @@ export default function JudgesPage() {
           <Section id="testnet" icon={ShieldCheck} title="Expected behaviour on testnet">
             <ul className="space-y-2">
               <li>
-                The app defaults to <code className="font-mono text-foreground">MOSAIC_NETWORK=testnet</code>.
+                The app defaults to <code className="font-mono text-on-surface">MOSAIC_NETWORK=testnet</code>.
                 The navbar badge shows the active network.
               </li>
               <li>
@@ -255,7 +255,7 @@ export default function JudgesPage() {
             <p>Representative calls and response shapes. Live status is verifiable at /diag.</p>
             <div className="mt-4 space-y-4">
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
                   SoSoValue · base https://openapi.sosovalue.com
                 </div>
                 <div className="space-y-2">
@@ -287,7 +287,7 @@ export default function JudgesPage() {
               </div>
 
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
                   SoDEX · base https://testnet-gw.sodex.dev/api/v1/spot
                 </div>
                 <div className="space-y-2">
@@ -321,14 +321,14 @@ export default function JudgesPage() {
           </Section>
         </div>
 
-        <div className="mt-12 rounded-xl border border-border/40 bg-card/60 dark:bg-card/30 p-5 text-sm">
-          <p className="text-muted-foreground">
+        <div className="mt-12 rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-5 text-sm">
+          <p className="text-on-surface-variant">
             Questions while judging? The full architecture, judging-rubric mapping and Wave-2
             changelog live in the repo&apos;s{" "}
             <Link
               href="https://github.com/j12s-team/mosaic"
               target="_blank"
-              className="text-brand-600 underline-offset-4 hover:underline dark:text-brand-300"
+              className="text-primary underline-offset-4 hover:underline"
             >
               README and WAVE2.md
             </Link>

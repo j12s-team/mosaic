@@ -28,6 +28,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { useChartColors, tooltipStyle } from "@/lib/chartColors";
 
 const ICONS = {
   news: Newspaper,
@@ -42,6 +43,7 @@ interface LivePortfolio extends PortfolioSnapshot {
 }
 
 export function Portfolio() {
+  const cc = useChartColors();
   const [data, setData] = useState<LivePortfolio | null>(null);
   const [resolved, setResolved] = useState<Record<string, "approved" | "dismissed">>({});
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +77,7 @@ export function Portfolio() {
     if (errored) {
       return (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 p-8 text-center text-sm text-muted-foreground">
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center text-sm text-on-surface-variant">
             <span>Couldn&apos;t load your portfolio just now.</span>
             <Button size="sm" variant="secondary" onClick={load} disabled={refreshing}>
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
@@ -108,7 +110,7 @@ export function Portfolio() {
         <CardHeader className="flex-row items-start justify-between space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+              <Wallet className="h-4 w-4 text-primary" />
               {isLive ? "Your SoDEX wallet" : "Live portfolio"}
               <Badge variant={isLive ? "success" : "outline"} className="text-[10px]">
                 {isLive ? "live · testnet" : "demo · mocks"}
@@ -122,7 +124,7 @@ export function Portfolio() {
                 }
               />
             </CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground italic">
+            <p className="mt-1 text-xs text-on-surface-variant italic">
               {isLive && data.walletAddress
                 ? `Address ${shortAddress(data.walletAddress)} — values priced from /markets/tickers.`
                 : `“${data.thesisPrompt}”`}
@@ -133,7 +135,7 @@ export function Portfolio() {
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="rounded-md border border-border/40 p-1 text-muted-foreground transition hover:bg-secondary/40 hover:text-foreground disabled:opacity-50"
+                className="rounded-sm border border-outline-variant p-1 text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface disabled:opacity-50"
                 title="Refresh balances"
               >
                 <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
@@ -160,26 +162,21 @@ export function Portfolio() {
                 <AreaChart data={data.history}>
                   <defs>
                     <linearGradient id="pv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgb(49,158,255)" stopOpacity={0.45} />
-                      <stop offset="100%" stopColor="rgb(49,158,255)" stopOpacity={0} />
+                      <stop offset="0%" stopColor={cc.primary} stopOpacity={0.45} />
+                      <stop offset="100%" stopColor={cc.primary} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Area
                     type="monotone"
                     dataKey="v"
-                    stroke="rgb(49,158,255)"
+                    stroke={cc.primary}
                     strokeWidth={2}
                     fill="url(#pv)"
                   />
                   <XAxis dataKey="t" hide />
                   <YAxis hide domain={["dataMin - 30", "dataMax + 30"]} />
                   <Tooltip
-                    contentStyle={{
-                      background: "rgba(10,15,28,0.9)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
+                    contentStyle={tooltipStyle(cc)}
                     labelFormatter={(v) => new Date(v).toLocaleDateString()}
                     formatter={(v: number) => [formatUSD(v), "Net value"]}
                   />
@@ -189,7 +186,7 @@ export function Portfolio() {
           )}
 
           {data.positions.length === 0 ? (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-4 text-xs text-amber-700 dark:text-amber-200">
+            <div className="rounded-md border border-warning/30 bg-warning/[0.04] p-4 text-xs text-warning">
               No balances detected on this SoDEX account. Visit the{" "}
               <a
                 className="underline underline-offset-4"
@@ -202,9 +199,9 @@ export function Portfolio() {
               to claim USDC, then refresh.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border/40">
+            <div className="overflow-hidden rounded-md border border-outline-variant">
               <table className="w-full text-left text-xs">
-                <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+                <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
                   <tr>
                     <th className="px-3 py-2">Asset</th>
                     <th className="px-3 py-2 text-right">Weight</th>
@@ -213,12 +210,12 @@ export function Portfolio() {
                     {!isLive && <th className="px-3 py-2 text-right">PnL</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-outline-variant/60">
                   {data.positions.map((p) => (
                     <tr key={p.symbol}>
                       <td className="px-3 py-2">
                         <div className="font-medium">{p.symbol}</div>
-                        <div className="text-[10px] text-muted-foreground">{p.name}</div>
+                        <div className="text-[10px] text-on-surface-variant">{p.name}</div>
                       </td>
                       <td className="px-3 py-2 text-right font-mono">
                         {(p.weight * 100).toFixed(1)}%
@@ -232,7 +229,7 @@ export function Portfolio() {
                       {!isLive && (
                         <td
                           className={`px-3 py-2 text-right font-mono ${
-                            p.pnlUsd >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                            p.pnlUsd >= 0 ? "text-success " : "text-error "
                           }`}
                         >
                           {p.pnlUsd >= 0 ? "+" : ""}
@@ -247,7 +244,7 @@ export function Portfolio() {
           )}
 
           {isLive && (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-[11px] text-on-surface-variant">
               PnL tracking lights up once you execute a Mosaic basket — Mosaic records the
               entry fills locally so the realised-return chart in <em>My baskets</em> below
               fills in over time.
@@ -257,10 +254,10 @@ export function Portfolio() {
       </Card>
 
       {proposals.length > 0 && (
-        <Card className="border-amber-500/20 bg-amber-500/[0.04]">
+        <Card className="border-warning/20 bg-warning/[0.04]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+              <AlertCircle className="h-4 w-4 text-warning" />
               Rebalance proposed by Mosaic
             </CardTitle>
           </CardHeader>
@@ -290,16 +287,16 @@ function ProposalCard({
   onDismiss: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-secondary/30 dark:bg-background/40 p-4">
+    <div className="rounded-md border border-outline-variant bg-surface-container p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <Badge variant="warning" className="text-[10px]">
             Trigger: {proposal.trigger}
           </Badge>
           <h4 className="mt-2 font-medium leading-snug">{proposal.summary}</h4>
-          <p className="mt-2 text-xs text-muted-foreground">{proposal.detail}</p>
+          <p className="mt-2 text-xs text-on-surface-variant">{proposal.detail}</p>
         </div>
-        <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+        <span className="whitespace-nowrap font-mono text-[10px] text-on-surface-variant">
           {new Date(proposal.generatedAt).toLocaleTimeString()}
         </span>
       </div>
@@ -308,29 +305,29 @@ function ProposalCard({
         {proposal.changes.map((c) => (
           <div
             key={c.symbol}
-            className="rounded-lg border border-border/40 bg-card/80 dark:bg-card/40 p-3"
+            className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-3"
           >
             <div className="flex items-center justify-between">
               <span className="font-semibold">{c.symbol}</span>
               <span className="font-mono text-xs">
                 {(c.fromWeight * 100).toFixed(1)}%
-                <span className="mx-1 text-muted-foreground">→</span>
+                <span className="mx-1 text-on-surface-variant">→</span>
                 <span
                   className={
-                    c.toWeight > c.fromWeight ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                    c.toWeight > c.fromWeight ? "text-success " : "text-error "
                   }
                 >
                   {(c.toWeight * 100).toFixed(1)}%
                 </span>
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">{c.reason}</p>
+            <p className="mt-1 text-[11px] text-on-surface-variant">{c.reason}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-3">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
           Citations from SoSoValue
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -339,9 +336,9 @@ function ProposalCard({
             return (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 px-2 py-1 text-[11px]"
+                className="flex items-center gap-1.5 rounded-sm border border-outline-variant bg-surface-container px-2 py-1 text-[11px]"
               >
-                <Icon className="h-3 w-3 text-brand-600 dark:text-brand-300" />
+                <Icon className="h-3 w-3 text-primary" />
                 <span>{c.label}</span>
               </div>
             );

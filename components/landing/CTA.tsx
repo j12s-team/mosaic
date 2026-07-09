@@ -6,14 +6,13 @@ export function CTA() {
   return (
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-5xl px-6 py-24">
-        <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-brand-950/80 via-card/40 to-card/40 p-12 text-center backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-0 opacity-50 [background:radial-gradient(800px_circle_at_50%_-20%,rgba(49,158,255,0.35),transparent)]" />
+        <div className="relative overflow-hidden rounded-xl bg-primary-container p-12 text-center text-on-primary-container">
           <h2 className="relative text-balance text-4xl font-semibold leading-tight md:text-5xl">
             Stop chasing alpha.
             <br className="hidden sm:block" />
-            <span className="text-gradient-brand">Architect it.</span>
+            <span className="text-primary">Architect it.</span>
           </h2>
-          <p className="relative mx-auto mt-5 max-w-xl text-muted-foreground">
+          <p className="relative mx-auto mt-5 max-w-xl text-on-primary-container/80">
             Tell Mosaic your thesis. Watch the agent build, execute, and maintain it on-chain — no
             spreadsheet, no Discord-tab-roulette, no quant desk required.
           </p>
@@ -34,7 +33,7 @@ export function CTA() {
               </Button>
             </a>
           </div>
-          <p className="relative mt-6 text-xs text-muted-foreground">
+          <p className="relative mt-6 text-xs text-on-primary-container/80">
             Open source · MIT licensed · shipped continuously, not at hackathon deadlines
           </p>
         </div>

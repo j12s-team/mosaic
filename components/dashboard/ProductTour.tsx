@@ -148,10 +148,10 @@ export function ProductTour({ forceOpen = false, onClose }: { forceOpen?: boolea
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
       {/* Dimmed overlay with cutout */}
-      <div className="pointer-events-auto absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={close} />
+      <div className="pointer-events-auto absolute inset-0 bg-black/40" onClick={close} />
       {highlight && (
         <div
-          className="absolute rounded-xl ring-2 ring-brand-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] transition-all duration-200"
+          className="absolute rounded-md ring-2 ring-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] transition-all duration-200"
           style={{
             top: highlight.top,
             left: highlight.left,
@@ -163,26 +163,26 @@ export function ProductTour({ forceOpen = false, onClose }: { forceOpen?: boolea
 
       {/* Step card */}
       <div
-        className="pointer-events-auto absolute rounded-2xl border border-border/60 bg-card/95 p-5 shadow-2xl backdrop-blur-xl transition-all duration-200"
+        className="pointer-events-auto absolute rounded-lg border border-outline-variant bg-surface-container-low p-5 shadow-elevation-3 transition-all duration-200"
         style={{ top: card.top, left: card.left, width: cardWidth }}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-300" />
-            <span className="text-[10px] uppercase tracking-wider text-brand-600 dark:text-brand-300">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-[10px] uppercase tracking-wider text-primary">
               Mosaic tour · {idx + 1} / {STEPS.length}
             </span>
           </div>
           <button
             onClick={close}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+            className="rounded-sm p-1 text-on-surface-variant hover:text-on-surface"
             aria-label="Close tour"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <h3 className="mt-2 text-base font-semibold">{step.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+        <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{step.body}</p>
         <div className="mt-4 flex items-center justify-between">
           <Button size="sm" variant="ghost" onClick={close}>
             Skip

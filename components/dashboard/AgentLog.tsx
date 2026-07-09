@@ -11,8 +11,8 @@ export interface LogStep {
 
 export function AgentLog({ steps }: { steps: LogStep[] }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
-      <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+    <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
+      <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
         Agent log
       </div>
       <ol className="space-y-2 text-sm">
@@ -20,25 +20,25 @@ export function AgentLog({ steps }: { steps: LogStep[] }) {
           <li key={s.id} className="flex items-start gap-3">
             <div className="mt-0.5">
               {s.status === "done" ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
               ) : s.status === "running" ? (
-                <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-300" />
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
               ) : (
-                <div className="h-4 w-4 rounded-full border border-border/60" />
+                <div className="h-4 w-4 rounded-full border border-outline-variant" />
               )}
             </div>
             <div>
               <div
                 className={
                   s.status === "pending"
-                    ? "text-muted-foreground"
-                    : "text-foreground"
+                    ? "text-on-surface-variant"
+                    : "text-on-surface"
                 }
               >
                 {s.label}
               </div>
               {s.detail && (
-                <div className="font-mono text-[11px] text-muted-foreground">
+                <div className="font-mono text-[11px] text-on-surface-variant">
                   {s.detail}
                 </div>
               )}

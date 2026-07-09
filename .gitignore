@@ -7,3 +7,10 @@ node_modules
 .vercel
 .turbo
 *.tsbuildinfo
+design.md
+.claude
+.codex
+.agent
+.gemini
+
+_to_delete/

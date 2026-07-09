@@ -3,66 +3,121 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light theme — clean, financial-terminal-on-paper. */
+  /*
+   * Material Design 3 color roles — light scheme.
+   * Generated from brand seed #319eff via M3 HCT tonal palettes
+   * (see openspec/changes/md3-redesign/design.md, decision D1).
+   * Values are raw RGB triplets so Tailwind can apply alpha.
+   */
   :root {
-    --background: 220 30% 98%;
-    --foreground: 222 47% 11%;
+    --md-sys-color-primary: 0 97 166; /* #0061A6 */
+    --md-sys-color-on-primary: 255 255 255; /* #FFFFFF */
+    --md-sys-color-primary-container: 210 228 255; /* #D2E4FF */
+    --md-sys-color-on-primary-container: 0 28 55; /* #001C37 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --md-sys-color-secondary: 83 95 112; /* #535F70 */
+    --md-sys-color-on-secondary: 255 255 255; /* #FFFFFF */
+    --md-sys-color-secondary-container: 215 227 248; /* #D7E3F8 */
+    --md-sys-color-on-secondary-container: 16 28 43; /* #101C2B */
 
-    --primary: 210 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --md-sys-color-tertiary: 107 87 120; /* #6B5778 */
+    --md-sys-color-on-tertiary: 255 255 255; /* #FFFFFF */
+    --md-sys-color-tertiary-container: 243 218 255; /* #F3DAFF */
+    --md-sys-color-on-tertiary-container: 37 20 49; /* #251431 */
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --md-sys-color-error: 186 26 26; /* #BA1A1A */
+    --md-sys-color-on-error: 255 255 255; /* #FFFFFF */
+    --md-sys-color-error-container: 255 218 214; /* #FFDAD6 */
+    --md-sys-color-on-error-container: 65 0 2; /* #410002 */
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 8% 46%;
+    --md-sys-color-background: 253 252 255; /* #FDFCFF */
+    --md-sys-color-on-background: 26 28 30; /* #1A1C1E */
+    --md-sys-color-surface: 253 252 255; /* #FDFCFF */
+    --md-sys-color-on-surface: 26 28 30; /* #1A1C1E */
+    --md-sys-color-surface-variant: 223 226 235; /* #DFE2EB */
+    --md-sys-color-on-surface-variant: 67 71 78; /* #43474E */
 
-    --accent: 220 14% 93%;
-    --accent-foreground: 222 47% 11%;
+    --md-sys-color-surface-container-lowest: 255 255 255; /* #FFFFFF */
+    --md-sys-color-surface-container-low: 244 243 247; /* #F4F3F7 */
+    --md-sys-color-surface-container: 238 237 241; /* #EEEDF1 */
+    --md-sys-color-surface-container-high: 232 232 235; /* #E8E8EB */
+    --md-sys-color-surface-container-highest: 227 226 230; /* #E3E2E6 */
 
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 0 0% 100%;
+    --md-sys-color-outline: 115 119 127; /* #73777F */
+    --md-sys-color-outline-variant: 195 198 207; /* #C3C6CF */
 
-    --border: 220 13% 90%;
-    --input: 220 13% 88%;
-    --ring: 210 100% 50%;
+    --md-sys-color-inverse-surface: 47 48 51; /* #2F3033 */
+    --md-sys-color-inverse-on-surface: 241 240 244; /* #F1F0F4 */
+    --md-sys-color-inverse-primary: 160 202 255; /* #A0CAFF */
 
-    --radius: 0.75rem;
+    /* Semantic extensions (M3 custom colors, harmonized with the seed). */
+    --md-ext-color-success: 20 108 58; /* #146C3A */
+    --md-ext-color-on-success: 255 255 255;
+    --md-ext-color-success-container: 176 241 195; /* #B0F1C3 */
+    --md-ext-color-on-success-container: 0 33 12; /* #00210C */
+    --md-ext-color-warning: 121 90 0; /* #795A00 */
+    --md-ext-color-on-warning: 255 255 255;
+    --md-ext-color-warning-container: 255 223 158; /* #FFDF9E */
+    --md-ext-color-on-warning-container: 38 26 0; /* #261A00 */
   }
 
-  /* Dark theme — the original Wave 1 palette. */
+  /*
+   * Material Design 3 color roles — derived dark scheme
+   * (DESIGN.md defines light only; dark derived per M3 dark-theme tones).
+   */
   .dark {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
+    --md-sys-color-primary: 160 202 255; /* #A0CAFF */
+    --md-sys-color-on-primary: 0 50 89; /* #003259 */
+    --md-sys-color-primary-container: 0 73 126; /* #00497E */
+    --md-sys-color-on-primary-container: 210 228 255; /* #D2E4FF */
 
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
+    --md-sys-color-secondary: 187 199 219; /* #BBC7DB */
+    --md-sys-color-on-secondary: 37 49 65; /* #253141 */
+    --md-sys-color-secondary-container: 60 72 88; /* #3C4858 */
+    --md-sys-color-on-secondary-container: 215 227 248; /* #D7E3F8 */
 
-    --primary: 210 100% 60%;
-    --primary-foreground: 222 47% 5%;
+    --md-sys-color-tertiary: 215 190 228; /* #D7BEE4 */
+    --md-sys-color-on-tertiary: 59 41 71; /* #3B2947 */
+    --md-sys-color-tertiary-container: 83 63 95; /* #533F5F */
+    --md-sys-color-on-tertiary-container: 243 218 255; /* #F3DAFF */
 
-    --secondary: 217 19% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --md-sys-color-error: 255 180 171; /* #FFB4AB */
+    --md-sys-color-on-error: 105 0 5; /* #690005 */
+    --md-sys-color-error-container: 147 0 10; /* #93000A */
+    --md-sys-color-on-error-container: 255 180 171; /* #FFB4AB */
 
-    --muted: 217 19% 14%;
-    --muted-foreground: 215 20% 65%;
+    --md-sys-color-background: 26 28 30; /* #1A1C1E */
+    --md-sys-color-on-background: 227 226 230; /* #E3E2E6 */
+    --md-sys-color-surface: 26 28 30; /* #1A1C1E */
+    --md-sys-color-on-surface: 227 226 230; /* #E3E2E6 */
+    --md-sys-color-surface-variant: 67 71 78; /* #43474E */
+    --md-sys-color-on-surface-variant: 195 198 207; /* #C3C6CF */
 
-    --accent: 217 19% 18%;
-    --accent-foreground: 210 40% 98%;
+    --md-sys-color-surface-container-lowest: 13 14 17; /* #0D0E11 */
+    --md-sys-color-surface-container-low: 26 28 30; /* #1A1C1E */
+    --md-sys-color-surface-container: 30 32 34; /* #1E2022 */
+    --md-sys-color-surface-container-high: 41 42 45; /* #292A2D */
+    --md-sys-color-surface-container-highest: 51 53 56; /* #333538 */
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --md-sys-color-outline: 141 145 153; /* #8D9199 */
+    --md-sys-color-outline-variant: 67 71 78; /* #43474E */
 
-    --border: 217 19% 18%;
-    --input: 217 19% 18%;
-    --ring: 210 100% 60%;
+    --md-sys-color-inverse-surface: 227 226 230; /* #E3E2E6 */
+    --md-sys-color-inverse-on-surface: 47 48 51; /* #2F3033 */
+    --md-sys-color-inverse-primary: 0 97 166; /* #0061A6 */
+
+    --md-ext-color-success: 149 214 168; /* #95D6A8 */
+    --md-ext-color-on-success: 0 57 24; /* #003918 */
+    --md-ext-color-success-container: 0 82 37; /* #005225 */
+    --md-ext-color-on-success-container: 176 241 195; /* #B0F1C3 */
+    --md-ext-color-warning: 245 190 72; /* #F5BE48 */
+    --md-ext-color-on-warning: 64 45 0; /* #402D00 */
+    --md-ext-color-warning-container: 92 67 0; /* #5C4300 */
+    --md-ext-color-on-warning-container: 255 223 158; /* #FFDF9E */
   }
 
   * {
-    @apply border-border;
+    @apply border-outline-variant;
   }
 
   html {
@@ -74,54 +129,18 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(60% 50% at 50% 0%, rgba(49, 158, 255, 0.10) 0%, transparent 60%),
-      radial-gradient(40% 40% at 100% 30%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
-      radial-gradient(30% 30% at 0% 80%, rgba(34, 197, 94, 0.05) 0%, transparent 60%);
-    background-attachment: fixed;
-  }
-
-  .dark body {
-    background-image:
-      radial-gradient(60% 50% at 50% 0%, rgba(49, 158, 255, 0.15) 0%, transparent 60%),
-      radial-gradient(40% 40% at 100% 30%, rgba(124, 58, 237, 0.10) 0%, transparent 60%),
-      radial-gradient(30% 30% at 0% 80%, rgba(34, 197, 94, 0.08) 0%, transparent 60%);
+    /* M3: flat background role; depth comes from surface-container tint steps. */
+    @apply bg-background text-on-background antialiased;
   }
 
   ::selection {
-    @apply bg-brand-500/30 text-foreground;
+    @apply bg-primary/25 text-on-background;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-card/40 backdrop-blur-xl border border-border/40;
-  }
-  .grid-bg {
-    background-size: 48px 48px;
-    @apply bg-grid-pattern;
-    mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 80%);
-  }
-  .text-gradient {
-    @apply bg-gradient-to-br from-foreground via-brand-500 to-brand-700 bg-clip-text text-transparent;
-  }
-  .dark .text-gradient {
-    @apply from-white via-brand-100 to-brand-300;
-  }
-  .text-gradient-brand {
-    @apply bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 bg-clip-text text-transparent;
-  }
-  .dark .text-gradient-brand {
-    @apply from-brand-300 via-brand-400 to-brand-600;
-  }
-  .ring-glow {
-    box-shadow:
-      0 0 0 1px rgba(49, 158, 255, 0.2),
-      0 0 40px -8px rgba(49, 158, 255, 0.4);
-  }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-color: rgb(var(--md-sys-color-outline-variant)) transparent;
   }
 }

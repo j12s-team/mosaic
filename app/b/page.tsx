@@ -11,7 +11,7 @@ export default function SharedBasketPage() {
     <Suspense
       fallback={
         <main className="mx-auto max-w-5xl px-6 pt-10 pb-24">
-          <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-8 text-center text-sm text-on-surface-variant">
             Loading shared basket…
           </div>
         </main>

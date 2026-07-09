@@ -201,11 +201,11 @@ export default function AppPage() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 sm:pt-10">
+      <main className="mx-auto max-w-content px-4 pt-6 pb-24 sm:px-6 sm:pt-10">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:mb-8">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mosaic agent</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-on-surface-variant">
               Thesis → basket → backtest → execution → portfolio.
             </p>
           </div>
@@ -242,7 +242,7 @@ export default function AppPage() {
             {basket && (
               <div data-tour="analysis" className="space-y-6">
                 {analysing && !backtest && (
-                  <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 text-sm text-muted-foreground backdrop-blur-xl">
+                  <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4 text-sm text-on-surface-variant">
                     Running backtest + Monte Carlo + scenario stress tests…
                   </div>
                 )}
@@ -274,25 +274,25 @@ export default function AppPage() {
                 <AgentLog steps={steps} />
               </div>
             )}
-            <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
-              <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
                 Mode
               </div>
               <p className="text-sm leading-relaxed">
                 Demo runs against testnet + mock fallbacks so judges never hit a paywall. Set
-                <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
+                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                   SOSOVALUE_API_KEY
                 </span>
                 and
-                <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
+                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                   SODEX_API_KEY
                 </span>
                 in
-                <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
+                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                   .env.local
                 </span>
                 to flip into live mode. Toggle
-                <span className="mx-1 rounded bg-secondary px-1 py-0.5 font-mono text-xs">
+                <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                   MOSAIC_NETWORK=mainnet
                 </span>
                 only after depositing collateral per the SoDEX docs.
@@ -300,28 +300,28 @@ export default function AppPage() {
               <a
                 href="https://sosovalue.gitbook.io/soso-value-api-doc"
                 target="_blank"
-                className="mt-3 inline-block text-xs text-brand-600 dark:text-brand-300 underline-offset-4 hover:underline"
+                className="mt-3 inline-block text-xs text-primary underline-offset-4 hover:underline"
               >
                 SoSoValue API docs →
               </a>
               <a
                 href="https://sodex.com/documentation/api/api"
                 target="_blank"
-                className="mt-1 inline-block text-xs text-brand-600 dark:text-brand-300 underline-offset-4 hover:underline"
+                className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
               >
                 SoDEX API docs →
               </a>
             </div>
 
-            <div className="rounded-xl border border-border/40 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
-              <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
                 Wave 2 upgrades
               </div>
-              <ul className="space-y-1.5 text-xs text-muted-foreground">
-                <li>• <span className="text-foreground">Live SoDEX balances</span> priced via /markets/tickers</li>
-                <li>• <span className="text-foreground">One-click SSI baskets</span> from SoSoValue Index API</li>
-                <li>• <span className="text-foreground">Market Pulse</span> — live tickers + featured news</li>
-                <li>• 4-step <span className="text-foreground">onboarding checklist</span></li>
+              <ul className="space-y-1.5 text-xs text-on-surface-variant">
+                <li>• <span className="text-on-surface">Live SoDEX balances</span> priced via /markets/tickers</li>
+                <li>• <span className="text-on-surface">One-click SSI baskets</span> from SoSoValue Index API</li>
+                <li>• <span className="text-on-surface">Market Pulse</span> — live tickers + featured news</li>
+                <li>• 4-step <span className="text-on-surface">onboarding checklist</span></li>
                 <li>• Expanded 20+ token universe with WSOSO + SOSO</li>
                 <li>• Weighted keyword classifier — distinct baskets per thesis</li>
                 <li>• 90-day backtest with Sharpe / Sortino / max DD</li>
@@ -336,13 +336,13 @@ export default function AppPage() {
       {/* Error toast — no silent failures */}
       {error && (
         <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
-          <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-card/95 p-3 pr-2 text-sm shadow-xl backdrop-blur-xl">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
-            <span className="max-w-xs text-foreground">{error}</span>
+          <div className="flex items-start gap-3 rounded-md border border-error/30 bg-surface-container-low p-3 pr-2 text-sm shadow-elevation-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-error" />
+            <span className="max-w-xs text-on-surface">{error}</span>
             <button
               onClick={() => setError(null)}
               aria-label="Dismiss"
-              className="rounded p-0.5 text-muted-foreground transition hover:text-foreground"
+              className="rounded p-0.5 text-on-surface-variant transition hover:text-on-surface"
             >
               <X className="h-4 w-4" />
             </button>

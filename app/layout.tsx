@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { themeBootScript } from "@/components/ThemeToggle";
+
+// M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
+// deterministic builds (no network fetch at build time).
+const roboto = localFont({
+  src: [
+    { path: "./fonts/roboto-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/roboto-latin-500-normal.woff2", weight: "500", style: "normal" },
+  ],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Mosaic — Your personal crypto hedge fund, run by an agent",
@@ -29,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={roboto.variable}>
       <head>
         {/* Block painting until we've set the theme class to avoid FOUC. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />

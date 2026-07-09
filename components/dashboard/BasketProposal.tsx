@@ -15,14 +15,14 @@ interface Props {
 }
 
 const COLORS = [
-  "from-brand-300 to-brand-500",
-  "from-violet-300 to-violet-500",
-  "from-emerald-300 to-emerald-500",
-  "from-amber-300 to-amber-500",
-  "from-pink-300 to-pink-500",
-  "from-cyan-300 to-cyan-500",
-  "from-rose-300 to-rose-500",
-  "from-lime-300 to-lime-500",
+  "bg-primary",
+  "bg-tertiary",
+  "bg-success",
+  "bg-warning",
+  "bg-secondary",
+  "bg-inverse-primary",
+  "bg-error",
+  "bg-primary-container",
 ];
 
 export function BasketProposal({ basket }: Props) {
@@ -36,10 +36,10 @@ export function BasketProposal({ basket }: Props) {
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <ShieldCheck className="h-4 w-4 text-primary" />
             Proposed basket
           </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-on-surface-variant">
             {basket.constituents.length} constituents • created{" "}
             {new Date(basket.createdAt).toLocaleTimeString()}
           </p>
@@ -57,18 +57,18 @@ export function BasketProposal({ basket }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <p className="text-sm leading-relaxed text-muted-foreground">{basket.reasoning}</p>
+        <p className="text-sm leading-relaxed text-on-surface-variant">{basket.reasoning}</p>
 
         {/* Stacked weight bar */}
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
             Weights
           </div>
-          <div className="mt-2 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-white/5">
+          <div className="mt-2 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-outline-variant/60">
             {basket.constituents.map((c, i) => (
               <div
                 key={c.symbol}
-                className={`bg-gradient-to-r ${COLORS[i % COLORS.length]}`}
+                className={`${COLORS[i % COLORS.length]}`}
                 style={{ width: `${c.weight * 100}%` }}
                 title={`${c.symbol}: ${(c.weight * 100).toFixed(1)}%`}
               />
@@ -78,12 +78,12 @@ export function BasketProposal({ basket }: Props) {
             {basket.constituents.map((c, i) => (
               <div key={c.symbol} className="flex items-center gap-2 text-xs">
                 <span
-                  className={`h-2.5 w-2.5 rounded-full bg-gradient-to-r ${
+                  className={`h-2.5 w-2.5 rounded-full ${
                     COLORS[i % COLORS.length]
                   }`}
                 />
                 <span className="font-medium">{c.symbol}</span>
-                <span className="font-mono text-muted-foreground">
+                <span className="font-mono text-on-surface-variant">
                   {(c.weight * 100).toFixed(1)}%
                 </span>
               </div>
@@ -99,28 +99,28 @@ export function BasketProposal({ basket }: Props) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, duration: 0.3, ease: "easeOut" }}
-              className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3"
+              className="rounded-md border border-outline-variant bg-surface-container p-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`h-2.5 w-2.5 flex-shrink-0 rounded-full bg-gradient-to-r ${
+                      className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${
                         COLORS[i % COLORS.length]
                       }`}
                     />
                     <span className="font-semibold">{c.symbol}</span>
-                    <span className="truncate text-xs text-muted-foreground">{c.name}</span>
+                    <span className="truncate text-xs text-on-surface-variant">{c.name}</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{c.rationale}</p>
+                  <p className="mt-1 text-xs text-on-surface-variant">{c.rationale}</p>
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <div className="font-mono text-sm">{(c.weight * 100).toFixed(1)}%</div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-[10px] text-on-surface-variant">
                     {c.metrics.momentum30d !== undefined && (
                       <span
                         className={
-                          c.metrics.momentum30d >= 0 ? "text-emerald-500 dark:text-emerald-300" : "text-red-500 dark:text-red-300"
+                          c.metrics.momentum30d >= 0 ? "text-success " : "text-error "
                         }
                       >
                         <TrendingUp className="mr-0.5 inline h-3 w-3" />
@@ -133,27 +133,27 @@ export function BasketProposal({ basket }: Props) {
               <div className="mt-2 grid grid-cols-3 gap-2 text-[10px] uppercase tracking-wider">
                 {c.metrics.sentiment !== undefined && (
                   <div>
-                    <div className="text-muted-foreground">Sentiment</div>
+                    <div className="text-on-surface-variant">Sentiment</div>
                     <Progress
                       value={(c.metrics.sentiment + 1) * 50}
                       barClassName={
-                        c.metrics.sentiment >= 0 ? "bg-emerald-400" : "bg-red-400"
+                        c.metrics.sentiment >= 0 ? "bg-success" : "bg-error"
                       }
                     />
                   </div>
                 )}
                 {c.metrics.liquidityScore !== undefined && (
                   <div>
-                    <div className="text-muted-foreground">Liquidity</div>
+                    <div className="text-on-surface-variant">Liquidity</div>
                     <Progress value={c.metrics.liquidityScore * 100} />
                   </div>
                 )}
                 {c.metrics.volatility !== undefined && (
                   <div>
-                    <div className="text-muted-foreground">Volatility</div>
+                    <div className="text-on-surface-variant">Volatility</div>
                     <Progress
                       value={Math.min(100, c.metrics.volatility * 80)}
-                      barClassName="bg-amber-400"
+                      barClassName="bg-warning"
                     />
                   </div>
                 )}
@@ -162,9 +162,9 @@ export function BasketProposal({ basket }: Props) {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-outline-variant bg-surface-container p-3 text-xs">
           <div>
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-on-surface-variant">
               Expected annualized vol
               <InfoHint label="Expected annualized vol" text="How much this basket's value is expected to swing over a year. Lower means a steadier portfolio." />
             </div>
@@ -173,7 +173,7 @@ export function BasketProposal({ basket }: Props) {
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-on-surface-variant">
               Concentration cap
               <InfoHint label="Concentration cap" text="The largest single-token weight. The agent caps this so no one coin can dominate the basket's risk." />
             </div>
@@ -182,7 +182,7 @@ export function BasketProposal({ basket }: Props) {
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-on-surface-variant">
               Notional
               <InfoHint label="Notional" text="The total USDC this basket would deploy across all legs when executed on SoDEX." />
             </div>

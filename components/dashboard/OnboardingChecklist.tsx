@@ -76,21 +76,21 @@ export function OnboardingChecklist() {
   }
 
   return (
-    <Card className="border-brand-500/20 bg-brand-500/[0.04]">
+    <Card className="border-primary/20 bg-primary/[0.04]">
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Rocket className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <Rocket className="h-4 w-4 text-primary" />
             Get started in 4 steps
           </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-on-surface-variant">
             {completed}/4 complete · SoDEX testnet is free, no real funds at risk.
           </p>
         </div>
         {allDone && (
           <button
             onClick={() => setCollapsed(true)}
-            className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            className="text-[10px] uppercase tracking-wider text-on-surface-variant hover:text-on-surface"
           >
             Hide
           </button>
@@ -115,13 +115,13 @@ export function OnboardingChecklist() {
                   href="https://testnet.sodex.com/faucet"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-md border border-brand-500/30 bg-brand-500/10 px-2 py-1 text-[11px] text-brand-700 dark:text-brand-200 hover:bg-brand-500/20"
+                  className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary hover:bg-primary/20"
                 >
                   Open faucet <ExternalLink className="h-3 w-3" />
                 </a>
                 <button
                   onClick={markFaucet}
-                  className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  className="text-[10px] uppercase tracking-wider text-on-surface-variant hover:text-on-surface"
                 >
                   {state.faucetClaimed ? "Unmark" : "I've claimed"}
                 </button>
@@ -142,7 +142,7 @@ export function OnboardingChecklist() {
           />
         </ol>
         {allDone && (
-          <div className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/[0.06] p-3 text-xs text-emerald-700 dark:text-emerald-200">
+          <div className="mt-4 rounded-sm border border-success/30 bg-success/[0.06] p-3 text-xs text-success">
             <Badge variant="success" className="text-[10px]">All set</Badge>{" "}
             You're done with onboarding. The dashboard now reflects your live SoDEX wallet and
             saved baskets.
@@ -169,18 +169,18 @@ function Step({
   return (
     <li className="flex items-start gap-3">
       {done ? (
-        <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
+        <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-success" />
       ) : (
-        <Circle className="h-5 w-5 flex-shrink-0 text-muted-foreground/60" />
+        <Circle className="h-5 w-5 flex-shrink-0 text-on-surface-variant" />
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <Icon className="h-3.5 w-3.5 text-brand-600 dark:text-brand-300" />
-          <span className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}>
+          <Icon className="h-3.5 w-3.5 text-primary" />
+          <span className={`text-sm font-medium ${done ? "text-on-surface-variant line-through" : ""}`}>
             {title}
           </span>
         </div>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{help}</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-on-surface-variant">{help}</p>
         {action && <div className="mt-2">{action}</div>}
       </div>
     </li>

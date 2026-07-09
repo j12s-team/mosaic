@@ -101,18 +101,18 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <Zap className="h-4 w-4 text-primary" />
             SoDEX execution plan
           </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-on-surface-variant">
             Multi-leg, IOC limits, slippage capped at 50bps per leg.
           </p>
         </div>
         <Badge variant="brand">{plan.venue}</Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="rounded-md border border-outline-variant bg-surface-container p-3">
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-on-surface-variant">
             Estimated total slippage (size-weighted)
             <InfoHint
               label="Slippage"
@@ -124,9 +124,9 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-border/40">
+        <div className="overflow-hidden rounded-md border border-outline-variant">
           <table className="w-full text-left text-xs">
-            <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-muted-foreground">
+            <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
               <tr>
                 <th className="px-3 py-2">Market</th>
                 <th className="px-3 py-2">Side</th>
@@ -135,7 +135,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
                 <th className="px-3 py-2 text-right">Slip</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-outline-variant/60">
               {plan.legs.map((leg) => (
                 <tr key={leg.market}>
                   <td className="px-3 py-2 font-medium">{leg.market}</td>
@@ -165,7 +165,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         {stage === "review" && (
           <>
             {failed && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-700 dark:text-red-300">
+              <div className="flex items-center gap-2 rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
                 Execution didn&apos;t go through. No orders were placed — please try again.
               </div>
@@ -177,15 +177,15 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         )}
 
         {stage === "confirm" && (
-          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="rounded-md border border-warning/20 bg-warning/5 p-4">
             <div className="flex items-start gap-3">
-              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-700 dark:text-amber-300" />
+              <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
               <div className="space-y-2 text-sm">
                 <p className="font-medium">
                   This will place {plan.legs.length} live orders on SoDEX (
                   {process.env.NEXT_PUBLIC_NETWORK ?? "testnet"}).
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-on-surface-variant">
                   Total notional <span className="font-mono">{formatUSD(plan.totalNotionalUsd)}</span>{" "}
                   · max slippage 50bps per leg · IOC limits, no market orders.
                 </p>
@@ -201,22 +201,22 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         )}
 
         {stage === "executing" && (
-          <div className="flex items-center gap-3 rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-4 text-sm">
-            <Loader2 className="h-4 w-4 animate-spin text-brand-600 dark:text-brand-300" />
+          <div className="flex items-center gap-3 rounded-md border border-outline-variant bg-surface-container p-4 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
             Routing {plan.legs.length} legs through SoDEX…
           </div>
         )}
 
         {stage === "done" && (
-          <div className="space-y-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
+          <div className="space-y-3 rounded-md border border-success/20 bg-success/5 p-4 text-sm">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-700 dark:text-emerald-300" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
               <div className="space-y-1">
                 <p className="font-medium">
                   Basket executed · {plan.legs.length} legs routed to SoDEX{" "}
                   {process.env.NEXT_PUBLIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}.
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-on-surface-variant">
                   Mosaic recorded the {formatUSD(plan.totalNotionalUsd)} entry locally and is now
                   snapshotting realised PnL. The basket card just opened below — expand it to see
                   every fill price and weight, plus the thesis-vs-realised curve as it fills in.

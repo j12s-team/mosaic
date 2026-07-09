@@ -80,27 +80,27 @@ export function ExplainBasket({ basket, executionNotionalUsd }: Props) {
           onClick={() => copy(shareUrl, "link")}
           title="Copy share link"
         >
-          {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" /> : <Share2 className="h-3.5 w-3.5" />}
+          {copiedLink ? <Check className="h-3.5 w-3.5 text-success" /> : <Share2 className="h-3.5 w-3.5" />}
           {copiedLink ? "Copied" : "Share basket"}
         </Button>
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-4">
           <Card className="w-full max-w-lg">
             <CardHeader className="flex-row items-start justify-between space-y-0">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-brand-500" />
+                  <MessageSquare className="h-4 w-4 text-primary" />
                   Tweet-ready explanation
                 </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-on-surface-variant">
                   280 characters · ready to copy or post directly to X
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                className="rounded-sm p-1 text-on-surface-variant hover:text-on-surface"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -108,13 +108,13 @@ export function ExplainBasket({ basket, executionNotionalUsd }: Props) {
             </CardHeader>
             <CardContent className="space-y-4">
               {loading && (
-                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/30 dark:bg-background/40 p-4 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-brand-500" />
+                <div className="flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container p-4 text-sm text-on-surface-variant">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   Asking the agent for a clean explanation…
                 </div>
               )}
               {!loading && text && (
-                <div className="rounded-lg border border-border/60 bg-secondary/30 dark:bg-background/40 p-4">
+                <div className="rounded-md border border-outline-variant bg-surface-container p-4">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{text}</p>
                   <div className="mt-3 flex items-center justify-between">
                     <Badge variant="outline" className="text-[10px]">
@@ -122,7 +122,7 @@ export function ExplainBasket({ basket, executionNotionalUsd }: Props) {
                     </Badge>
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={() => copy(text, "tweet")}>
-                        {copiedTweet ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedTweet ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                         {copiedTweet ? "Copied" : "Copy"}
                       </Button>
                       <a
@@ -137,14 +137,14 @@ export function ExplainBasket({ basket, executionNotionalUsd }: Props) {
                 </div>
               )}
 
-              <div className="rounded-lg border border-border/60 bg-secondary/30 dark:bg-background/40 p-3 text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-md border border-outline-variant bg-surface-container p-3 text-xs">
+                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                   Direct share link
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   <code className="flex-1 truncate font-mono text-[11px]">{shareUrl}</code>
                   <Button size="sm" variant="ghost" onClick={() => copy(shareUrl, "link")}>
-                    {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedLink ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                   </Button>
                 </div>
               </div>

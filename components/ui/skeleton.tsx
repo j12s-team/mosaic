@@ -1,13 +1,10 @@
 import { cn } from "@/lib/utils";
 
-/** A neutral shimmer placeholder used while data is loading. */
+/** A neutral pulse placeholder on the highest surface-container tone. */
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-md bg-secondary/70 dark:bg-background/50",
-        className,
-      )}
+      className={cn("animate-pulse rounded-sm bg-surface-container-highest", className)}
       {...props}
     />
   );

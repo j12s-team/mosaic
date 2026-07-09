@@ -23,14 +23,14 @@ export function StressTestPanel({ results }: Props) {
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <AlertTriangle className="h-4 w-4 text-primary" />
             Historical regime stress tests
             <InfoHint
               label="Stress tests"
               text="Replays your exact basket weights through real crisis windows (COVID, FTX, ETH-ETF). 'Max DD' is the worst drop; 'days underwater' is how long until it recovered."
             />
           </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-on-surface-variant">
             How this basket would have behaved through three named market regimes.
           </p>
         </div>
@@ -44,42 +44,42 @@ export function StressTestPanel({ results }: Props) {
             return (
               <div
                 key={r.id}
-                className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-4"
+                className="rounded-md border border-outline-variant bg-surface-container p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+                    <Icon className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold leading-tight">{r.name}</span>
                   </div>
                   <Badge variant={positive ? "success" : "danger"} className="whitespace-nowrap text-[10px]">
                     {formatPct(r.basketReturnPct / 100, { signed: true })}
                   </Badge>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">{r.blurb}</p>
+                <p className="mt-2 text-xs text-on-surface-variant">{r.blurb}</p>
                 <div className="mt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Window</span>
+                    <span className="text-on-surface-variant">Window</span>
                     <span className="font-mono">{r.days}d</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Max DD</span>
-                    <span className="font-mono text-red-700 dark:text-red-300">
+                    <span className="text-on-surface-variant">Max DD</span>
+                    <span className="font-mono text-error">
                       {formatPct(r.maxDrawdownPct / 100)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Days underwater</span>
+                    <span className="text-on-surface-variant">Days underwater</span>
                     <span className="font-mono">{r.daysUnderwater}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Best leg</span>
-                    <span className="font-mono text-emerald-700 dark:text-emerald-300">
+                    <span className="text-on-surface-variant">Best leg</span>
+                    <span className="font-mono text-success">
                       {r.bestConstituent.symbol} {formatPct(r.bestConstituent.pct / 100, { signed: true })}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Worst leg</span>
-                    <span className="font-mono text-red-700 dark:text-red-300">
+                    <span className="text-on-surface-variant">Worst leg</span>
+                    <span className="font-mono text-error">
                       {r.worstConstituent.symbol} {formatPct(r.worstConstituent.pct / 100, { signed: true })}
                     </span>
                   </div>

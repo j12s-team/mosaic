@@ -17,6 +17,7 @@ import {
   YAxis,
 } from "recharts";
 import { LineChart, History } from "lucide-react";
+import { useChartColors, tooltipStyle } from "@/lib/chartColors";
 
 interface Props {
   result: BacktestResult;
@@ -36,30 +37,31 @@ function Stat({
   info?: string;
 }) {
   const color =
-    tone === "pos" ? "text-emerald-700 dark:text-emerald-300" : tone === "neg" ? "text-red-700 dark:text-red-300" : "text-foreground";
+    tone === "pos" ? "text-success " : tone === "neg" ? "text-error " : "text-on-surface";
   return (
-    <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+    <div className="rounded-md border border-outline-variant bg-surface-container p-3">
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-on-surface-variant">
         {label}
         {info && <InfoHint label={label} text={info} />}
       </div>
       <div className={`mt-1 font-mono text-lg font-semibold ${color}`}>{value}</div>
-      {hint && <div className="mt-0.5 text-[10px] text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-0.5 text-[10px] text-on-surface-variant">{hint}</div>}
     </div>
   );
 }
 
 export function BacktestPanel({ result }: Props) {
+  const cc = useChartColors();
   const beats = result.excessReturnPct > 0;
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <History className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+            <History className="h-4 w-4 text-primary" />
             90-day backtest
           </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-on-surface-variant">
             Daily-rebalanced replay over historical returns · vs MAG7.ssi benchmark
           </p>
         </div>
@@ -123,24 +125,24 @@ export function BacktestPanel({ result }: Props) {
           />
         </div>
 
-        <div className="rounded-lg border border-border/40 bg-secondary/30 dark:bg-background/40 p-3">
+        <div className="rounded-md border border-outline-variant bg-surface-container p-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
               Equity curve · drawdown shadow
             </div>
-            <LineChart className="h-3 w-3 text-muted-foreground" />
+            <LineChart className="h-3 w-3 text-on-surface-variant" />
           </div>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={result.series} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
                 <defs>
                   <linearGradient id="bt-eq" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(49,158,255)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="rgb(49,158,255)" stopOpacity={0} />
+                    <stop offset="0%" stopColor={cc.primary} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={cc.primary} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="bt-dd" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(248,113,113)" stopOpacity={0} />
-                    <stop offset="100%" stopColor="rgb(248,113,113)" stopOpacity={0.35} />
+                    <stop offset="0%" stopColor={cc.error} stopOpacity={0} />
+                    <stop offset="100%" stopColor={cc.error} stopOpacity={0.35} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.1} />
@@ -161,12 +163,7 @@ export function BacktestPanel({ result }: Props) {
                   hide
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "rgba(10,15,28,0.95)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
+                  contentStyle={tooltipStyle(cc)}
                   labelFormatter={(v) => v as string}
                   formatter={(v: number, name: string) => {
                     if (name === "equity") return [`${((v - 1) * 100).toFixed(2)}%`, "Return"];
@@ -178,7 +175,7 @@ export function BacktestPanel({ result }: Props) {
                   yAxisId="dd"
                   type="monotone"
                   dataKey="drawdown"
-                  stroke="rgba(248,113,113,0.35)"
+                  stroke={cc.error} strokeOpacity={0.35}
                   fill="url(#bt-dd)"
                   isAnimationActive={false}
                 />
@@ -186,7 +183,7 @@ export function BacktestPanel({ result }: Props) {
                   yAxisId="eq"
                   type="monotone"
                   dataKey="equity"
-                  stroke="rgb(49,158,255)"
+                  stroke={cc.primary}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}

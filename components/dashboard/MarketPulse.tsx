@@ -56,14 +56,14 @@ export function MarketPulse() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+          <Activity className="h-4 w-4 text-primary" />
           Live market pulse
           <Badge variant="brand" className="text-[10px]">
             SoDEX + SoSoValue
           </Badge>
           <LivePulse label="streaming" className="ml-auto" />
         </CardTitle>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-[11px] text-on-surface-variant">
           Top 24h movers priced from{" "}
           <code className="font-mono">SoSoValue /token/metrics</code> (real spot, not testnet
           synthetic prices) alongside SSI index moves and featured news. Refreshes every minute.
@@ -71,7 +71,7 @@ export function MarketPulse() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
             Movers
           </div>
           {loading ? (
@@ -87,11 +87,11 @@ export function MarketPulse() {
                 return (
                   <div
                     key={t.symbol}
-                    className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 px-2 py-1.5 text-xs"
+                    className="flex items-center justify-between rounded-sm border border-outline-variant bg-surface-container px-2 py-1.5 text-xs"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{t.symbol}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">
+                      <span className="font-mono text-[10px] text-on-surface-variant">
                         {t.lastPrice < 0.0001
                           ? `$${t.lastPrice.toExponential(2)}`
                           : t.lastPrice < 1
@@ -101,7 +101,7 @@ export function MarketPulse() {
                     </div>
                     <span
                       className={`flex items-center gap-0.5 font-mono ${
-                        up ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                        up ? "text-success " : "text-error "
                       }`}
                     >
                       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -112,13 +112,13 @@ export function MarketPulse() {
               })}
             </div>
           ) : (
-            <div className="py-4 text-center text-xs text-muted-foreground">No ticker data right now.</div>
+            <div className="py-4 text-center text-xs text-on-surface-variant">No ticker data right now.</div>
           )}
         </div>
 
         {data && data.ssiMovers && data.ssiMovers.length > 0 && (
           <div>
-            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
               <Layers className="h-3 w-3" /> SoSoValue SSI movers
             </div>
             <div className="grid gap-1.5 sm:grid-cols-2">
@@ -127,15 +127,15 @@ export function MarketPulse() {
                 return (
                   <div
                     key={m.symbol}
-                    className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 px-2 py-1.5 text-xs"
+                    className="flex items-center justify-between rounded-sm border border-outline-variant bg-surface-container px-2 py-1.5 text-xs"
                   >
                     <div className="min-w-0">
                       <div className="font-semibold">{m.symbol}</div>
-                      <div className="truncate text-[10px] text-muted-foreground">{m.name}</div>
+                      <div className="truncate text-[10px] text-on-surface-variant">{m.name}</div>
                     </div>
                     <span
                       className={`flex items-center gap-0.5 font-mono ${
-                        up ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                        up ? "text-success " : "text-error "
                       }`}
                     >
                       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -149,7 +149,7 @@ export function MarketPulse() {
         )}
 
         <div>
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
             <Newspaper className="h-3 w-3" /> SoSoValue featured news
           </div>
           {loading ? (
@@ -161,7 +161,7 @@ export function MarketPulse() {
           ) : data && data.news.length > 0 ? (
             <ul className="space-y-2">
               {data.news.map((n) => (
-                <li key={n.id} className="rounded-md border border-border/40 bg-secondary/30 dark:bg-background/40 p-2">
+                <li key={n.id} className="rounded-sm border border-outline-variant bg-surface-container p-2">
                   <a
                     href={n.url ?? "#"}
                     target={n.url ? "_blank" : undefined}
@@ -170,14 +170,14 @@ export function MarketPulse() {
                   >
                     {n.title}
                   </a>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-on-surface-variant">
                     <span>{n.source}</span>
                     {n.tickers && n.tickers.length > 0 && (
                       <span className="flex flex-wrap gap-0.5">
                         {n.tickers.slice(0, 3).map((tk) => (
                           <span
                             key={tk}
-                            className="rounded bg-brand-500/10 px-1 font-mono text-brand-700 dark:text-brand-300"
+                            className="rounded bg-primary/10 px-1 font-mono text-primary"
                           >
                             {tk}
                           </span>
@@ -188,10 +188,10 @@ export function MarketPulse() {
                       <span
                         className={
                           n.sentiment > 0.2
-                            ? "text-emerald-600 dark:text-emerald-400"
+                            ? "text-success "
                             : n.sentiment < -0.2
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-muted-foreground"
+                            ? "text-error "
+                            : "text-on-surface-variant"
                         }
                       >
                         sentiment {(n.sentiment * 100).toFixed(0)}
@@ -202,7 +202,7 @@ export function MarketPulse() {
               ))}
             </ul>
           ) : (
-            <div className="py-4 text-center text-xs text-muted-foreground">No news right now.</div>
+            <div className="py-4 text-center text-xs text-on-surface-variant">No news right now.</div>
           )}
         </div>
       </CardContent>

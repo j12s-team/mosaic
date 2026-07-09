@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ArrowRight,
 } from "lucide-react";
+import { useChartColors, tooltipStyle } from "@/lib/chartColors";
 
 /**
  * ProductPreview — a self-playing, dependency-free* storyboard of the core
@@ -32,11 +33,11 @@ const LOG = [
 ];
 
 const BASKET: { sym: string; name: string; w: number; grad: string }[] = [
-  { sym: "TAO", name: "Bittensor", w: 32, grad: "from-brand-300 to-brand-500" },
-  { sym: "RENDER", name: "Render", w: 24, grad: "from-violet-300 to-violet-500" },
-  { sym: "FET", name: "Artificial SF", w: 20, grad: "from-emerald-300 to-emerald-500" },
-  { sym: "AKT", name: "Akash", w: 14, grad: "from-amber-300 to-amber-500" },
-  { sym: "GRASS", name: "Grass", w: 10, grad: "from-pink-300 to-pink-500" },
+  { sym: "TAO", name: "Bittensor", w: 32, grad: "bg-primary" },
+  { sym: "RENDER", name: "Render", w: 24, grad: "bg-tertiary" },
+  { sym: "FET", name: "Artificial SF", w: 20, grad: "bg-success" },
+  { sym: "AKT", name: "Akash", w: 14, grad: "bg-warning" },
+  { sym: "GRASS", name: "Grass", w: 10, grad: "bg-secondary" },
 ];
 
 const STATS = [
@@ -56,6 +57,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 export function ProductPreview() {
+  const cc = useChartColors();
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState(reduce ? 2 : 0);
   const [typed, setTyped] = useState(reduce ? THESIS : "");
@@ -88,26 +90,26 @@ export function ProductPreview() {
   }, [phase, reduce]);
 
   return (
-    <div className="ring-glow w-full rounded-2xl border border-border/50 bg-card/80 dark:bg-card/40 p-2 backdrop-blur-xl">
+    <div className="shadow-elevation-2 w-full rounded-lg border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-2">
       {/* window chrome */}
       <div className="flex items-center gap-2 px-2 py-1.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
-        <span className="ml-2 rounded-md bg-secondary/60 dark:bg-background/50 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+        <span className="h-2.5 w-2.5 rounded-full bg-error/70" />
+        <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
+        <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
+        <span className="ml-2 rounded-sm bg-surface-container px-2 py-0.5 font-mono text-[10px] text-on-surface-variant">
           mosaic.app / agent
         </span>
-        <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <span className="ml-auto flex items-center gap-1.5 text-[10px] text-on-surface-variant">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
           </span>
           live demo
         </span>
       </div>
 
       {/* stage */}
-      <div className="relative h-[300px] overflow-hidden rounded-xl border border-border/40 bg-secondary/20 dark:bg-background/30 sm:h-[280px]">
+      <div className="relative h-[300px] overflow-hidden rounded-md border border-outline-variant bg-surface-container sm:h-[280px]">
         <AnimatePresence mode="wait">
           {phase === 0 && (
             <motion.div
@@ -119,24 +121,24 @@ export function ProductPreview() {
               className="absolute inset-0"
             >
               <Frame>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <Sparkles className="mr-1 inline h-3 w-3 text-brand-500" />
+                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <Sparkles className="mr-1 inline h-3 w-3 text-primary" />
                   Tell Mosaic your thesis
                 </div>
-                <div className="mt-3 min-h-[88px] rounded-lg border border-border/50 bg-card/70 dark:bg-card/40 p-4 text-sm leading-relaxed sm:text-base">
+                <div className="mt-3 min-h-[88px] rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4 text-sm leading-relaxed sm:text-base">
                   {typed}
-                  <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-brand-500 align-middle" />
+                  <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-primary align-middle" />
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex gap-2">
-                    <span className="rounded-md border border-border/50 bg-secondary/40 dark:bg-background/40 px-2 py-1 text-[10px] text-muted-foreground">
+                    <span className="rounded-sm border border-outline-variant bg-surface-container px-2 py-1 text-[10px] text-on-surface-variant">
                       $1,000
                     </span>
-                    <span className="rounded-md border border-brand-500/40 bg-brand-500/10 px-2 py-1 text-[10px] text-brand-700 dark:text-brand-200">
+                    <span className="rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] text-primary">
                       balanced
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white">
+                  <span className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-medium text-on-primary">
                     Build my basket <ArrowRight className="h-3 w-3" />
                   </span>
                 </div>
@@ -154,7 +156,7 @@ export function ProductPreview() {
               className="absolute inset-0"
             >
               <Frame>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                   Agent log
                 </div>
                 <div className="mt-3 space-y-2">
@@ -164,12 +166,12 @@ export function ProductPreview() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.15 + i * 0.45 }}
-                      className="flex items-center gap-2 rounded-lg border border-border/40 bg-card/60 dark:bg-card/30 px-3 py-2 text-xs"
+                      className="flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-3 py-2 text-xs"
                     >
-                      <span className="grid h-4 w-4 flex-shrink-0 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+                      <span className="grid h-4 w-4 flex-shrink-0 place-items-center rounded-full bg-success/15 text-success">
                         <Check className="h-2.5 w-2.5" />
                       </span>
-                      <span className="text-muted-foreground">{line}</span>
+                      <span className="text-on-surface-variant">{line}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -188,29 +190,29 @@ export function ProductPreview() {
             >
               <Frame>
                 <div className="flex items-center justify-between">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <ShieldCheck className="mr-1 inline h-3 w-3 text-brand-500" />
+                  <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+                    <ShieldCheck className="mr-1 inline h-3 w-3 text-primary" />
                     Proposed basket
                   </div>
                   <div className="flex gap-1.5">
-                    <span className="rounded-full border border-brand-500/40 bg-brand-500/10 px-2 py-0.5 text-[10px] text-brand-700 dark:text-brand-200">
+                    <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
                       vs AI.ssi
                     </span>
-                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-700 dark:text-amber-300">
+                    <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] text-warning">
                       Moderate · 48/100
                     </span>
                   </div>
                 </div>
 
                 {/* weight bar */}
-                <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-white/5">
+                <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-outline-variant/60">
                   {BASKET.map((c, i) => (
                     <motion.div
                       key={c.sym}
                       initial={{ width: 0 }}
                       animate={{ width: `${c.w}%` }}
                       transition={{ delay: 0.1 + i * 0.12, duration: 0.5, ease: "easeOut" }}
-                      className={`bg-gradient-to-r ${c.grad}`}
+                      className={`${c.grad}`}
                     />
                   ))}
                 </div>
@@ -223,11 +225,11 @@ export function ProductPreview() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.25 + i * 0.12 }}
-                      className="flex items-center gap-2 rounded-lg border border-border/40 bg-card/60 dark:bg-card/30 px-2.5 py-1.5"
+                      className="flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-2.5 py-1.5"
                     >
-                      <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full bg-gradient-to-r ${c.grad}`} />
+                      <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${c.grad}`} />
                       <span className="text-xs font-medium">{c.sym}</span>
-                      <span className="ml-auto font-mono text-[11px] text-muted-foreground">{c.w}%</span>
+                      <span className="ml-auto font-mono text-[11px] text-on-surface-variant">{c.w}%</span>
                     </motion.div>
                   ))}
                 </div>
@@ -245,8 +247,8 @@ export function ProductPreview() {
               className="absolute inset-0"
             >
               <Frame>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <History className="mr-1 inline h-3 w-3 text-brand-500" />
+                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <History className="mr-1 inline h-3 w-3 text-primary" />
                   90-day backtest
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2">
@@ -256,14 +258,14 @@ export function ProductPreview() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 + i * 0.1 }}
-                      className="rounded-lg border border-border/40 bg-card/60 dark:bg-card/30 p-2.5"
+                      className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-2.5"
                     >
-                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{s.k}</div>
+                      <div className="text-[9px] uppercase tracking-wider text-on-surface-variant">{s.k}</div>
                       <div
                         className={`mt-0.5 font-mono text-sm font-semibold ${
                           s.tone === "pos"
-                            ? "text-emerald-600 dark:text-emerald-300"
-                            : "text-red-600 dark:text-red-300"
+                            ? "text-success "
+                            : "text-error "
                         }`}
                       >
                         {s.v}
@@ -273,18 +275,18 @@ export function ProductPreview() {
                 </div>
 
                 {/* sparkline */}
-                <div className="mt-3 rounded-lg border border-border/40 bg-card/60 dark:bg-card/30 p-2.5">
+                <div className="mt-3 rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-2.5">
                   <svg viewBox="0 0 240 48" className="h-12 w-full" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="pp-eq" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgb(49,158,255)" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="rgb(49,158,255)" stopOpacity="0" />
+                        <stop offset="0%" stopColor={cc.primary} stopOpacity="0.35" />
+                        <stop offset="100%" stopColor={cc.primary} stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     <motion.path
                       d="M0,40 L24,36 L48,38 L72,30 L96,33 L120,24 L144,26 L168,16 L192,19 L216,10 L240,6"
                       fill="none"
-                      stroke="rgb(49,158,255)"
+                      stroke={cc.primary}
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -303,7 +305,7 @@ export function ProductPreview() {
                   initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300"
+                  className="mt-3 flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Executed on SoDEX testnet · 5 fills · 41 bps slippage
@@ -320,7 +322,7 @@ export function ProductPreview() {
           <div key={p} className="flex flex-col gap-1">
             <div className="h-0.5 overflow-hidden rounded-full bg-border/60">
               <motion.div
-                className="h-full bg-brand-500"
+                className="h-full bg-primary"
                 initial={false}
                 animate={{ width: i < phase ? "100%" : i === phase ? "100%" : "0%" }}
                 transition={{ duration: i === phase && !reduce ? PHASE_MS / 1000 : 0.3, ease: "linear" }}
@@ -329,7 +331,7 @@ export function ProductPreview() {
             </div>
             <span
               className={`truncate text-center text-[9px] sm:text-[10px] ${
-                i === phase ? "text-foreground" : "text-muted-foreground"
+                i === phase ? "text-on-surface" : "text-on-surface-variant"
               }`}
             >
               {p}

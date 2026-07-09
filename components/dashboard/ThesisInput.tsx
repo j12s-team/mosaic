@@ -102,20 +102,20 @@ export function ThesisInput({ onSubmit, loading }: Props) {
   }
 
   return (
-    <Card className="ring-glow">
+    <Card className="shadow-elevation-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+          <Sparkles className="h-4 w-4 text-primary" />
           Tell Mosaic your thesis
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* One-click demo theses — zero setup for judges */}
         <div>
-          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-brand-700 dark:text-brand-200">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary">
             <Zap className="h-3.5 w-3.5" />
             Try a sample thesis
-            <span className="font-normal text-muted-foreground">— one click, builds instantly</span>
+            <span className="font-normal text-on-surface-variant">— one click, builds instantly</span>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {DEMOS.map((d) => (
@@ -123,14 +123,14 @@ export function ThesisInput({ onSubmit, loading }: Props) {
                 key={d.label}
                 onClick={() => runDemo(d)}
                 disabled={loading}
-                className="group flex items-center gap-2.5 rounded-lg border border-border/50 bg-secondary/30 dark:bg-background/40 px-3 py-2.5 text-left transition hover:border-brand-500/50 hover:bg-brand-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group flex items-center gap-2.5 rounded-md border border-outline-variant bg-surface-container px-3 py-2.5 text-left transition hover:border-primary/50 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-md bg-brand-500/15 text-brand-600 transition group-hover:bg-brand-500/25 dark:text-brand-300">
+                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-sm bg-primary/15 text-primary transition group-hover:bg-primary/25">
                   <d.Icon className="h-3.5 w-3.5" />
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-xs font-medium">{d.label}</span>
-                  <span className="block truncate text-[10px] text-muted-foreground">{d.sub}</span>
+                  <span className="block truncate text-[10px] text-on-surface-variant">{d.sub}</span>
                 </span>
               </button>
             ))}
@@ -139,17 +139,17 @@ export function ThesisInput({ onSubmit, loading }: Props) {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-border/40" />
+            <div className="w-full border-t border-outline-variant" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-card px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="bg-surface-container-low px-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
               or write your own
             </span>
           </div>
         </div>
 
         <div>
-          <label className="text-xs uppercase tracking-wider text-muted-foreground">
+          <label className="text-xs uppercase tracking-wider text-on-surface-variant">
             Plain English thesis
           </label>
           <Textarea
@@ -163,7 +163,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+            <label className="text-xs uppercase tracking-wider text-on-surface-variant">
               Amount (USDC)
             </label>
             <div className="mt-2 flex items-center gap-2">
@@ -174,16 +174,16 @@ export function ThesisInput({ onSubmit, loading }: Props) {
                 step={100}
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
-                className="flex-1 accent-brand-400"
+                className="flex-1 accent-primary"
               />
-              <span className="w-24 rounded-md border border-input bg-secondary/30 dark:bg-background/40 px-3 py-1.5 text-right text-sm font-mono">
+              <span className="w-24 rounded-sm border border-outline bg-surface-container px-3 py-1.5 text-right text-sm font-mono">
                 ${amount.toLocaleString()}
               </span>
             </div>
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+            <label className="text-xs uppercase tracking-wider text-on-surface-variant">
               Risk profile
             </label>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -191,10 +191,10 @@ export function ThesisInput({ onSubmit, loading }: Props) {
                 <button
                   key={r}
                   onClick={() => setRisk(r)}
-                  className={`rounded-md border px-3 py-1.5 text-xs capitalize transition ${
+                  className={`rounded-sm border px-3 py-1.5 text-xs capitalize transition ${
                     risk === r
-                      ? "border-brand-500/40 bg-brand-500/10 text-brand-700 dark:text-brand-200"
-                      : "border-border/40 bg-secondary/30 dark:bg-background/40 text-muted-foreground hover:border-white/15"
+                      ? "border-primary/40 bg-primary/10 text-primary "
+                      : "border-outline-variant bg-surface-container text-on-surface-variant hover:border-outline"
                   }`}
                 >
                   {r}

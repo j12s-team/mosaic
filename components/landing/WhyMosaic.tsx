@@ -30,30 +30,30 @@ const ROWS = [
 
 export function WhyMosaic() {
   return (
-    <section id="why" className="relative mx-auto max-w-7xl px-6 py-24">
+    <section id="why" className="relative mx-auto max-w-content px-6 py-24">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-300">
+        <p className="text-sm font-medium uppercase tracking-widest text-primary">
           What you get
         </p>
         <h2 className="mt-3 text-balance text-4xl font-semibold leading-tight md:text-5xl">
           Built to be the front door for thematic on-chain investing.
         </h2>
-        <p className="mt-4 text-balance text-muted-foreground">
+        <p className="mt-4 text-balance text-on-surface-variant">
           Direction, integration depth, and a working flow — shipped today, then sharpened every
           week as SoSoValue, SSI and SoDEX keep growing.
         </p>
       </div>
 
       <Card className="mt-14 overflow-hidden">
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-outline-variant/60">
           {ROWS.map((r) => (
             <div
               key={r.criterion}
               className="grid grid-cols-1 gap-4 p-6 md:grid-cols-[2fr_1fr_4fr]"
             >
               <div className="font-medium">{r.criterion}</div>
-              <div className="font-mono text-sm text-brand-600 dark:text-brand-300">{r.weight}</div>
-              <div className="text-sm text-muted-foreground">{r.delivery}</div>
+              <div className="font-mono text-sm text-primary">{r.weight}</div>
+              <div className="text-sm text-on-surface-variant">{r.delivery}</div>
             </div>
           ))}
         </div>

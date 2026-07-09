@@ -41,7 +41,7 @@ export function HealthBanner() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 dark:bg-card/40 px-4 py-2 text-xs text-muted-foreground backdrop-blur-xl">
+      <div className="flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-4 py-2 text-xs text-on-surface-variant">
         <Loader2 className="h-3 w-3 animate-spin" />
         Checking SoDEX connectivity…
       </div>
@@ -49,7 +49,7 @@ export function HealthBanner() {
   }
   if (!data) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-2 text-xs text-red-700 dark:text-red-300">
+      <div className="flex items-center gap-2 rounded-md border border-error/30 bg-error/5 px-4 py-2 text-xs text-error">
         <WifiOff className="h-3 w-3" />
         Health probe failed.
       </div>
@@ -60,9 +60,9 @@ export function HealthBanner() {
   const reachableNoAuth = data.sodex.reachable && !data.sodex.apiKeyPresent;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 dark:bg-card/40 p-4 backdrop-blur-xl">
+    <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
           <Activity className="h-3 w-3" />
           Status
         </span>
@@ -90,14 +90,14 @@ export function HealthBanner() {
       </div>
 
       {data.network === "testnet" && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Droplets className="h-3 w-3 text-brand-500" />
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+          <Droplets className="h-3 w-3 text-primary" />
           Need testnet tokens?{" "}
           <a
             href="https://testnet.sodex.com/faucet"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-brand-500 underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline"
           >
             SoDEX faucet
             <ExternalLink className="h-3 w-3" />
@@ -107,19 +107,19 @@ export function HealthBanner() {
       )}
 
       {!live && !reachableNoAuth && (
-        <p className="mt-2 text-[11px] text-red-600 dark:text-red-400">
+        <p className="mt-2 text-[11px] text-error">
           SoDEX is unreachable from this host. Check your network, then verify{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-[10px]">MOSAIC_NETWORK</code> and{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-[10px]">SODEX_BASE_URL</code>.
+          <code className="rounded bg-surface-container px-1 py-0.5 font-mono text-[10px]">MOSAIC_NETWORK</code> and{" "}
+          <code className="rounded bg-surface-container px-1 py-0.5 font-mono text-[10px]">SODEX_BASE_URL</code>.
           {data.sodex.error ? ` ${data.sodex.error}` : ""}
         </p>
       )}
       {reachableNoAuth && (
-        <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
+        <p className="mt-2 text-[11px] text-warning">
           SoDEX endpoint is reachable but no API key is configured — orders will route to the
           deterministic mock layer. Add{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-[10px]">SODEX_API_KEY</code> and{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-[10px]">SODEX_API_SECRET</code>{" "}
+          <code className="rounded bg-surface-container px-1 py-0.5 font-mono text-[10px]">SODEX_API_KEY</code> and{" "}
+          <code className="rounded bg-surface-container px-1 py-0.5 font-mono text-[10px]">SODEX_API_SECRET</code>{" "}
           in your .env.local to flip live.
         </p>
       )}

@@ -51,7 +51,7 @@ function StatusCard({
 }) {
   const err = hasError(value);
   return (
-    <div className="rounded-xl border border-border/40 bg-card/60 dark:bg-card/30 p-4">
+    <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium">{label}</span>
         {err ? (
@@ -64,7 +64,7 @@ function StatusCard({
           </Badge>
         )}
       </div>
-      <p className="mt-2 break-words text-[11px] text-muted-foreground">
+      <p className="mt-2 break-words text-[11px] text-on-surface-variant">
         {err ? (value as { error: string }).error : okText(value)}
       </p>
     </div>
@@ -113,7 +113,7 @@ export default function DiagPage() {
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
               Integration status
             </h1>
-            <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+            <p className="mt-3 max-w-2xl text-base text-on-surface-variant">
               This page calls every SoSoValue and SoDEX integration right now and reports what came
               back — so you can verify the wiring without digging through server logs.
             </p>
@@ -125,17 +125,17 @@ export default function DiagPage() {
         </div>
 
         {loading && !data ? (
-          <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="mt-10 flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" /> Probing live integrations…
           </div>
         ) : failed ? (
-          <div className="mt-10 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-700 dark:text-red-300">
+          <div className="mt-10 flex items-center gap-2 rounded-md border border-error/30 bg-error/5 p-4 text-sm text-error">
             <WifiOff className="h-4 w-4" /> Could not reach /api/diag. Try Re-run.
           </div>
         ) : data ? (
           <div className="mt-8 space-y-8">
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                 Environment
               </h2>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -153,7 +153,7 @@ export default function DiagPage() {
             </section>
 
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-muted-foreground">SoDEX</h2>
+              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">SoDEX</h2>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <StatusCard
                   label="GET /markets/tickers"
@@ -173,7 +173,7 @@ export default function DiagPage() {
             </section>
 
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">
                 SoSoValue
               </h2>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -200,21 +200,21 @@ export default function DiagPage() {
               </div>
             </section>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-on-surface-variant">
               Probed at {new Date(data.timestamp).toLocaleString()}. A “reachable” badge means the
               endpoint answered; “error” means Mosaic fell back to curated data for that surface.
               See the{" "}
-              <Link href="/judges" className="text-brand-600 underline-offset-4 hover:underline dark:text-brand-300">
+              <Link href="/judges" className="text-primary underline-offset-4 hover:underline">
                 judge&apos;s guide
               </Link>{" "}
               for what&apos;s live vs simulated.
             </p>
 
-            <details className="rounded-xl border border-border/40 bg-card/60 dark:bg-card/30 p-4">
-              <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+            <details className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
+              <summary className="cursor-pointer text-xs font-medium text-on-surface-variant">
                 Raw /api/diag response
               </summary>
-              <pre className="mt-3 overflow-x-auto text-[10px] leading-relaxed text-muted-foreground">
+              <pre className="mt-3 overflow-x-auto text-[10px] leading-relaxed text-on-surface-variant">
                 {JSON.stringify(data, null, 2)}
               </pre>
             </details>
