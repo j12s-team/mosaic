@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,23 @@ import type { Basket, ExecutionPlan } from "@/lib/types";
 import { ArrowDown, AlertTriangle, CheckCircle2, ChevronRight, Loader2, Lock, Zap } from "lucide-react";
 import { getSession } from "@/lib/wallet";
 import { HOUSE_OWNER, saveBasketEverywhere, appendSnapshot } from "@/lib/storage";
+import type { Mandate } from "@/lib/mandate";
+
+interface ReceiptFill {
+  orderId: string;
+  status: string;
+  market: string;
+  side: string;
+  filledNotionalUsd: number;
+  avgPrice: number;
+  estPrice?: number;
+  estSlippageBps?: number;
+  realisedSlippageBps?: number;
+  simulated: boolean;
+  dryRun?: boolean;
+}
+
+const IS_MAINNET = process.env.NEXT_PUBLIC_MOSAIC_NETWORK === "mainnet";
 
 interface Props {
   plan: ExecutionPlan;
@@ -20,10 +37,38 @@ interface Props {
 export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
   const [stage, setStage] = useState<"review" | "confirm" | "executing" | "done">("review");
   const [failed, setFailed] = useState(false);
+  const [gateReasons, setGateReasons] = useState<string[]>([]);
+  const [receipt, setReceipt] = useState<ReceiptFill[]>([]);
+  const [mandate, setMandate] = useState<Mandate | null>(null);
+  const [mandateChecked, setMandateChecked] = useState(!IS_MAINNET);
+
+  // On mainnet, execution requires a signed mandate covering this basket —
+  // look one up for the connected wallet.
+  useEffect(() => {
+    if (!IS_MAINNET) return;
+    const addr = getSession()?.address;
+    if (!addr) {
+      setMandateChecked(true);
+      return;
+    }
+    fetch(`/api/mandate?wallet=${addr}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const now = Date.now() / 1000;
+        const m = (d.mandates ?? []).find(
+          (x: Mandate) => x.basketId === basket.id && x.status === "active" && x.expiry > now,
+        );
+        setMandate(m ?? null);
+      })
+      .catch(() => setMandate(null))
+      .finally(() => setMandateChecked(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basket.id]);
 
   async function onExecute() {
     setStage("executing");
     setFailed(false);
+    setGateReasons([]);
     let res: Response;
     try {
       res = await fetch("/api/execute", {
@@ -32,11 +77,14 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         body: JSON.stringify({
           basketId: plan.basketId,
           confirm: true,
+          mandateId: mandate?.id,
+          wallet: getSession()?.address,
           legs: plan.legs.map((l) => ({
             market: l.market,
             side: l.side,
             notionalUsd: l.notionalUsd,
             maxSlippageBps: 50,
+            estSlippageBps: l.estSlippageBps,
           })),
         }),
       });
@@ -46,9 +94,25 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       return;
     }
     if (!res.ok) {
+      try {
+        const body = await res.json();
+        if (Array.isArray(body.reasons)) {
+          setGateReasons(body.reasons.map((r: { rule: string; detail: string }) => `${r.rule}: ${r.detail}`));
+        } else if (body.error) {
+          setGateReasons([body.error]);
+        }
+      } catch {
+        /* generic failure */
+      }
       setFailed(true);
       setStage("review");
       return;
+    }
+    try {
+      const body = await res.json();
+      setReceipt(Array.isArray(body.fills) ? body.fills : []);
+    } catch {
+      setReceipt([]);
     }
 
     // Persist the basket so the "thesis vs realised" loop can begin.
@@ -167,12 +231,35 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         {stage === "review" && (
           <>
             {failed && (
-              <div className="flex items-center gap-2 rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error">
-                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                Execution didn&apos;t go through. No orders were placed — please try again.
+              <div className="rounded-md border border-error/30 bg-error/5 p-3 text-xs text-error">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                  Execution didn&apos;t go through. No orders were placed.
+                </div>
+                {gateReasons.length > 0 && (
+                  <ul className="mt-2 space-y-1 pl-5">
+                    {gateReasons.map((r) => (
+                      <li key={r} className="list-disc">{r}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
-            <Button className="w-full" onClick={() => setStage("confirm")}>
+            {IS_MAINNET && mandateChecked && !mandate && (
+              <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning-container/40 p-3 text-xs text-on-surface">
+                <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-warning" />
+                <span>
+                  Mainnet execution needs a signed <span className="font-medium">investment
+                  mandate</span> for this basket — sign one in the Mandates panel first. The
+                  mandate caps notional, tokens, and slippage, and you can revoke it anytime.
+                </span>
+              </div>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => setStage("confirm")}
+              disabled={IS_MAINNET && !mandate}
+            >
               Review &amp; confirm <ChevronRight className="h-4 w-4" />
             </Button>
           </>
@@ -225,6 +312,56 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
                 </p>
               </div>
             </div>
+            {receipt.length > 0 && (
+              <div className="overflow-hidden rounded-md border border-outline-variant">
+                <div className="border-b border-outline-variant bg-surface-container px-3 py-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  Execution receipt · predicted vs realised
+                </div>
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
+                    <tr>
+                      <th className="px-3 py-2">Market</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2 text-right">Filled</th>
+                      <th className="px-3 py-2 text-right">Est slip</th>
+                      <th className="px-3 py-2 text-right">Realised</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/60">
+                    {receipt.map((f) => (
+                      <tr key={f.orderId}>
+                        <td className="px-3 py-2 font-medium">{f.market}</td>
+                        <td className="px-3 py-2">
+                          <Badge
+                            variant={
+                              f.status === "FILLED" ? "success"
+                              : f.status === "PARTIAL" ? "warning"
+                              : f.status === "REJECTED" ? "danger"
+                              : "outline"
+                            }
+                            className="text-[10px]"
+                          >
+                            {f.status.toLowerCase()}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono">{formatUSD(f.filledNotionalUsd)}</td>
+                        <td className="px-3 py-2 text-right font-mono">
+                          {f.estSlippageBps != null ? `${f.estSlippageBps} bps` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono">
+                          {f.realisedSlippageBps != null ? `${f.realisedSlippageBps} bps` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {receipt.some((f) => f.simulated) && (
+                  <div className="border-t border-outline-variant px-3 py-2 text-[10px] text-on-surface-variant">
+                    Simulated fills — arm MOSAIC_REAL_ORDERS with SoDEX credentials for live transport.
+                  </div>
+                )}
+              </div>
+            )}
             <Button size="sm" variant="secondary" onClick={jumpToBasket} className="w-full">
               <ArrowDown className="h-3.5 w-3.5" />
               Jump to my basket

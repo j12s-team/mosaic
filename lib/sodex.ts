@@ -346,7 +346,7 @@ export function estimateFill(book: OrderbookSnapshot, side: "buy" | "sell", noti
 }
 
 // ---------------------------------------------------------------------------
-// Authenticated writes — EIP-712 signing TODO (Wave 3)
+// Authenticated writes — EIP-712-signed SoDEX orders (Wave 3)
 // ---------------------------------------------------------------------------
 
 export interface PlaceOrderInput {
@@ -356,33 +356,207 @@ export interface PlaceOrderInput {
   /** "ioc" = immediate-or-cancel limit at slippage cap. We never use market orders. */
   type?: "limit-ioc";
   maxSlippageBps?: number;
+  /** Build + sign the order but do NOT send it — logs the would-be request. */
+  dryRun?: boolean;
 }
 
-export async function placeOrder(input: PlaceOrderInput) {
-  // Wave 3 TODO: build EIP-712 typed signature.
-  //
-  // 1. Build the BatchNewOrderRequest payload (compact JSON, struct-order
-  //    matching sodex-go-sdk-public).
-  // 2. payloadHash = keccak256(json.Marshal(payload)).
-  // 3. EIP-712 sign ExchangeAction{payloadHash, nonce} under domain
-  //    { name: "spot", version: "1", chainId: 138565 (testnet) or 286623 (mainnet),
-  //      verifyingContract: 0x00...00 }.
-  // 4. Prepend 0x01 to the 65-byte sig → X-API-Sign.
-  // 5. POST ${SPOT_ENDPOINT}/trade/orders/batch with X-API-Key (key name),
-  //    X-API-Sign, X-API-Nonce (Unix ms within (T-2d, T+1d)).
-  //
-  // For Wave 2, every placeOrder returns a simulated fill so the executor UI
-  // can still demonstrate the full thesis→execution→portfolio loop without
-  // requiring a registered API key + funded testnet wallet.
+export interface OrderFill {
+  orderId: string;
+  status: "FILLED" | "PARTIAL" | "REJECTED" | "SIMULATED" | "DRY_RUN";
+  filledNotionalUsd: number;
+  avgPrice: number;
+  market: string;
+  side: "buy" | "sell";
+  estPrice?: number;
+  estSlippageBps?: number;
+  realisedSlippageBps?: number;
+  simulated: boolean;
+  dryRun?: boolean;
+  note?: string;
+}
+
+/** True when real order transport is armed (creds + explicit opt-in). */
+export function realOrdersEnabled(): boolean {
+  return (
+    !useMocks() &&
+    process.env.MOSAIC_REAL_ORDERS === "true" &&
+    Boolean(process.env.SODEX_API_KEY) &&
+    Boolean(process.env.SODEX_API_SECRET)
+  );
+}
+
+/**
+ * Sign a SoDEX payload per the documented scheme: EIP-712
+ * ExchangeAction{payloadHash, nonce} under domain
+ * { name: "spot", version: "1", chainId, verifyingContract: 0x0 },
+ * with 0x01 prepended to the 65-byte signature (X-API-Sign).
+ * chainId: 286623 mainnet · 138565 testnet (SoDEX API docs).
+ */
+async function signSodexPayload(payloadJson: string, nonce: number): Promise<string> {
+  const { typedDataDigest, signDigest, keccakHex } = await import("./eip712");
+  const payloadHash = keccakHex(payloadJson);
+  const digest = typedDataDigest(
+    {
+      name: "spot",
+      version: "1",
+      chainId: currentNetwork() === "mainnet" ? 286623 : 138565,
+      verifyingContract: "0x0000000000000000000000000000000000000000",
+    },
+    "ExchangeAction",
+    [
+      { name: "payloadHash", type: "bytes32" },
+      { name: "nonce", type: "uint64" },
+    ],
+    { payloadHash, nonce },
+  );
+  const sig = signDigest(digest, process.env.SODEX_API_SECRET!);
+  return `0x01${sig.slice(2)}`;
+}
+
+/**
+ * Spot batch-order payload. Field names follow the SoDEX API docs' newOrder
+ * action shape; verify with a testnet round-trip before arming
+ * MOSAIC_REAL_ORDERS on mainnet (staged rollout — design.md, Migration Plan).
+ */
+function buildSpotOrderPayload(args: {
+  market: string;
+  side: "buy" | "sell";
+  quantity: number;
+  price: number;
+}) {
   return {
-    orderId: `sim-${Date.now()}`,
-    status: "FILLED" as const,
-    filledNotionalUsd: input.notionalUsd,
-    avgPrice: 0,
+    type: "newOrder",
+    params: {
+      accountID: process.env.SODEX_ACCOUNT_ID ?? "",
+      symbolID: toSodexSymbol(args.market),
+      orders: [
+        {
+          clOrdID: `mosaic-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+          side: args.side.toUpperCase(),
+          type: "LIMIT",
+          timeInForce: "IOC",
+          quantity: String(args.quantity),
+          price: String(args.price),
+        },
+      ],
+    },
+  };
+}
+
+export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
+  // Pre-trade estimate from the live orderbook — also the reconciliation
+  // baseline for realised-slippage reporting.
+  let estPrice = 0;
+  let estSlippageBps = 0;
+  try {
+    const book = await getOrderbook(input.market);
+    const est = estimateFill(book, input.side, input.notionalUsd);
+    estPrice = est.avgPrice;
+    estSlippageBps = Math.round(est.slippageBps);
+  } catch {
+    // estimate unavailable — proceed; realised comparison will be partial
+  }
+
+  const cap = input.maxSlippageBps ?? 50;
+
+  // Simulated path: mocks on, transport not armed, or missing credentials.
+  if (!realOrdersEnabled()) {
+    return {
+      orderId: `sim-${Date.now()}`,
+      status: "SIMULATED",
+      filledNotionalUsd: input.notionalUsd,
+      avgPrice: estPrice,
+      market: input.market,
+      side: input.side,
+      estPrice,
+      estSlippageBps,
+      realisedSlippageBps: estSlippageBps,
+      simulated: true,
+      note: "Simulated fill — set MOSAIC_REAL_ORDERS=true with SoDEX credentials to arm live transport.",
+    };
+  }
+
+  // Live path: IOC limit priced at the estimate bumped by the slippage cap.
+  const direction = input.side === "buy" ? 1 : -1;
+  const limitPrice = +(estPrice * (1 + (direction * cap) / 10_000)).toPrecision(8);
+  const quantity = +(input.notionalUsd / limitPrice).toPrecision(8);
+  const payload = buildSpotOrderPayload({
     market: input.market,
     side: input.side,
-    simulated: true as const,
-    note: "EIP-712 signing pipeline lands in Wave 3. This is a simulated fill.",
+    quantity,
+    price: limitPrice,
+  });
+  const payloadJson = JSON.stringify(payload);
+  const nonce = Date.now();
+  const sign = await signSodexPayload(payloadJson, nonce);
+
+  if (input.dryRun || process.env.MOSAIC_DRY_RUN === "1") {
+    console.info(`[sodex] DRY RUN — would POST /trade/orders/batch: ${payloadJson}`);
+    return {
+      orderId: `dry-${nonce}`,
+      status: "DRY_RUN",
+      filledNotionalUsd: 0,
+      avgPrice: 0,
+      market: input.market,
+      side: input.side,
+      estPrice,
+      estSlippageBps,
+      simulated: false,
+      dryRun: true,
+      note: "Dry run — order built and EIP-712-signed but not sent.",
+    };
+  }
+
+  const res = await fetch(`${baseUrl()}/trade/orders/batch`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": process.env.SODEX_API_KEY!,
+      "X-API-Sign": sign,
+      "X-API-Nonce": String(nonce),
+    },
+    body: payloadJson,
+    cache: "no-store",
+  });
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new Error(`SoDEX order HTTP ${res.status}: ${bodyText.slice(0, 300)}`);
+  }
+  let env: SodexEnvelope<Record<string, unknown>>;
+  try {
+    env = JSON.parse(bodyText);
+  } catch {
+    throw new Error(`SoDEX order: unparseable response: ${bodyText.slice(0, 200)}`);
+  }
+  if (env.code !== 0) {
+    throw new Error(`SoDEX order code ${env.code}: ${env.error ?? "unknown error"}`);
+  }
+
+  // Parse fill info defensively — exact response shape verified at live-run.
+  const d = (env.data ?? {}) as Record<string, unknown>;
+  const first = Array.isArray((d as { orders?: unknown[] }).orders)
+    ? ((d as { orders: Record<string, unknown>[] }).orders[0] ?? {})
+    : d;
+  const avgPrice = Number(first.avgPrice ?? first.price ?? 0) || 0;
+  const filledQty = Number(first.cumQty ?? first.filledQuantity ?? first.quantity ?? 0) || 0;
+  const filledNotionalUsd = avgPrice > 0 ? +(avgPrice * filledQty).toFixed(2) : 0;
+  const realisedSlippageBps =
+    avgPrice > 0 && estPrice > 0
+      ? Math.round(Math.abs(avgPrice / estPrice - 1) * 10_000) + estSlippageBps * 0
+      : undefined;
+  const fullyFilled = filledNotionalUsd >= input.notionalUsd * 0.99;
+
+  return {
+    orderId: String(first.orderID ?? first.orderId ?? first.clOrdID ?? `sodex-${nonce}`),
+    status: filledNotionalUsd <= 0 ? "REJECTED" : fullyFilled ? "FILLED" : "PARTIAL",
+    filledNotionalUsd,
+    avgPrice,
+    market: input.market,
+    side: input.side,
+    estPrice,
+    estSlippageBps,
+    realisedSlippageBps,
+    simulated: false,
   };
 }
 

@@ -205,7 +205,7 @@ export default function JudgesPage() {
                   <Row
                     surface="SoDEX order placement"
                     status="sim"
-                    detail="The confirm → execute path short-circuits to a deterministic simulated fill. EIP-712-signed on-chain writes are deliberately scoped to Wave 3 — we don't move funds in a demo."
+                    detail="Wave 3: the EIP-712 signing pipeline is wired end-to-end (ExchangeAction over the SoDEX domain), gated by user-signed investment mandates with a server-side policy gate, audit log, and kill switch. Live transport is armed per-deployment via MOSAIC_REAL_ORDERS after a dry-run; unarmed deployments return clearly-labeled simulated fills."
                   />
                   <Row
                     surface="Backtest · Monte Carlo · stress tests"
@@ -237,7 +237,7 @@ export default function JudgesPage() {
               </li>
               <li>
                 No seed phrase or deposit is required to run the full thesis → basket → backtest →
-                execute flow — execution is simulated on testnet.
+                execute flow. Mainnet execution is mandate-gated (Wave 3); deployments without armed credentials return labeled simulated fills.
               </li>
               <li>
                 To see live SoDEX balances, connect a wallet and claim test USDC from the SoDEX
@@ -312,7 +312,7 @@ export default function JudgesPage() {
                   <Endpoint
                     method="POST"
                     path="/trade/orders/batch  (Wave 3)"
-                    note="Multi-leg order placement. Simulated in the demo; EIP-712-signed on-chain writes land in Wave 3."
+                    note="Multi-leg IOC order placement, EIP-712-signed (Wave 3). Mainnet requires a signed investment mandate; unarmed deployments simulate fills."
                     sample={`// simulated fill in demo:\n{ "filled": true, "legs": 5,\n  "avgSlippageBps": 41 }`}
                   />
                 </div>

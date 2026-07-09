@@ -84,6 +84,22 @@ export async function ensureSchema() {
     leg jsonb NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
+  await q`ALTER TABLE fills ADD COLUMN IF NOT EXISTS mandate_id text`;
+  await q`CREATE TABLE IF NOT EXISTS proposals (
+    id text PRIMARY KEY,
+    basket_id text NOT NULL,
+    mandate_id text,
+    changes jsonb NOT NULL,
+    veto_window_hours int NOT NULL DEFAULT 24,
+    status text,
+    proposed_at timestamptz NOT NULL DEFAULT now(),
+    proposed_at_iso text NOT NULL
+  )`;
+  await q`CREATE TABLE IF NOT EXISTS settings (
+    key text PRIMARY KEY,
+    value jsonb NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`;
   ensured = true;
 }
 
@@ -260,6 +276,165 @@ export async function dbVerifyChain(basketId: string): Promise<ChainVerdict> {
     signature: r.signature as string,
   }));
   return verifyChain(chain);
+}
+
+// ---------------------------------------------------------------------------
+// Mandates, fills, kill switch, proposals (mainnet-mandate-execution)
+// ---------------------------------------------------------------------------
+
+import type { Mandate, MandateTerms } from "./mandate";
+
+export async function dbSaveMandate(mandate: Mandate): Promise<void> {
+  await ensureSchema();
+  const { id, signature, status, createdAt, ...terms } = mandate;
+  await sql()`
+    INSERT INTO mandates (id, wallet, basket_id, terms, signature, status, created_at)
+    VALUES (${id}, ${norm(mandate.wallet)}, ${mandate.basketId},
+            ${JSON.stringify(terms)}::jsonb, ${signature}, ${status}, ${createdAt})
+    ON CONFLICT (id) DO NOTHING`;
+}
+
+function rowToMandate(r: Record<string, unknown>): Mandate {
+  const terms = r.terms as MandateTerms;
+  return {
+    ...terms,
+    id: r.id as string,
+    signature: r.signature as string,
+    status: r.status as Mandate["status"],
+    createdAt: new Date(r.created_at as string).toISOString(),
+  };
+}
+
+export async function dbListMandates(wallet: string): Promise<Mandate[]> {
+  await ensureSchema();
+  const rows = await sql()`
+    SELECT * FROM mandates WHERE wallet = ${norm(wallet)} ORDER BY created_at DESC`;
+  return rows.map(rowToMandate);
+}
+
+export async function dbGetMandate(id: string): Promise<Mandate | null> {
+  await ensureSchema();
+  const rows = await sql()`SELECT * FROM mandates WHERE id = ${id} LIMIT 1`;
+  return rows.length ? rowToMandate(rows[0]) : null;
+}
+
+export async function dbRevokeMandate(wallet: string, id: string): Promise<boolean> {
+  await ensureSchema();
+  const rows = await sql()`
+    UPDATE mandates SET status = 'revoked'
+    WHERE id = ${id} AND wallet = ${norm(wallet)} RETURNING id`;
+  return rows.length > 0;
+}
+
+export interface FillRecord {
+  basketId: string;
+  mandateId?: string;
+  orderId?: string;
+  leg: {
+    market: string;
+    side: string;
+    requestedNotionalUsd: number;
+    filledNotionalUsd: number;
+    estPrice?: number;
+    avgPrice?: number;
+    estSlippageBps?: number;
+    realisedSlippageBps?: number;
+    simulated: boolean;
+    dryRun?: boolean;
+  };
+}
+
+export async function dbRecordFill(fill: FillRecord): Promise<void> {
+  await ensureSchema();
+  await sql()`
+    INSERT INTO fills (basket_id, mandate_id, order_id, leg)
+    VALUES (${fill.basketId}, ${fill.mandateId ?? null}, ${fill.orderId ?? null},
+            ${JSON.stringify(fill.leg)}::jsonb)`;
+}
+
+/** Cumulative FILLED notional under a mandate (dry-run fills excluded). */
+export async function dbMandateUtilisation(
+  mandateId: string,
+): Promise<{ filledNotionalUsd: number; lastExecutionAt?: string }> {
+  await ensureSchema();
+  const rows = await sql()`
+    SELECT leg, created_at FROM fills WHERE mandate_id = ${mandateId}`;
+  let filled = 0;
+  let last: string | undefined;
+  for (const r of rows) {
+    const leg = r.leg as FillRecord["leg"];
+    if (leg.dryRun) continue;
+    filled += Number(leg.filledNotionalUsd) || 0;
+    const at = new Date(r.created_at as string).toISOString();
+    if (!last || at > last) last = at;
+  }
+  return { filledNotionalUsd: +filled.toFixed(2), lastExecutionAt: last };
+}
+
+/** Global kill switch: env override wins, else the settings table. */
+export async function dbKillSwitch(): Promise<boolean> {
+  if (process.env.MOSAIC_KILL_SWITCH === "1") return true;
+  await ensureSchema();
+  const rows = await sql()`SELECT value FROM settings WHERE key = 'killSwitch' LIMIT 1`;
+  return rows.length ? Boolean((rows[0].value as { on?: boolean }).on) : false;
+}
+
+export async function dbSetKillSwitch(on: boolean, actor: string): Promise<void> {
+  await ensureSchema();
+  await sql()`
+    INSERT INTO settings (key, value, updated_at)
+    VALUES ('killSwitch', ${JSON.stringify({ on })}::jsonb, now())
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`;
+  await dbAudit(actor, on ? "kill-switch-on" : "kill-switch-off");
+}
+
+export interface ProposalRow {
+  id: string;
+  basketId: string;
+  mandateId: string | null;
+  changes: unknown;
+  vetoWindowHours: number;
+  status: "executed" | "vetoed" | null;
+  proposedAt: string;
+}
+
+export async function dbCreateProposal(p: {
+  id: string;
+  basketId: string;
+  mandateId?: string;
+  changes: unknown;
+  vetoWindowHours: number;
+  proposedAt: string;
+}): Promise<void> {
+  await ensureSchema();
+  await sql()`
+    INSERT INTO proposals (id, basket_id, mandate_id, changes, veto_window_hours, proposed_at, proposed_at_iso)
+    VALUES (${p.id}, ${p.basketId}, ${p.mandateId ?? null}, ${JSON.stringify(p.changes)}::jsonb,
+            ${p.vetoWindowHours}, ${p.proposedAt}, ${p.proposedAt})
+    ON CONFLICT (id) DO NOTHING`;
+}
+
+export async function dbSetProposalStatus(
+  id: string,
+  status: "executed" | "vetoed",
+): Promise<void> {
+  await ensureSchema();
+  await sql()`UPDATE proposals SET status = ${status} WHERE id = ${id}`;
+}
+
+export async function dbListProposals(basketId: string): Promise<ProposalRow[]> {
+  await ensureSchema();
+  const rows = await sql()`
+    SELECT * FROM proposals WHERE basket_id = ${basketId} ORDER BY proposed_at DESC`;
+  return rows.map((r) => ({
+    id: r.id as string,
+    basketId: r.basket_id as string,
+    mandateId: (r.mandate_id as string) ?? null,
+    changes: r.changes,
+    vetoWindowHours: Number(r.veto_window_hours),
+    status: (r.status as ProposalRow["status"]) ?? null,
+    proposedAt: r.proposed_at_iso as string,
+  }));
 }
 
 export async function dbAudit(actor: string, action: string, detail?: unknown) {

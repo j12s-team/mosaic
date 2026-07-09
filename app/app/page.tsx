@@ -16,6 +16,7 @@ import { HealthBanner } from "@/components/dashboard/HealthBanner";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { SsiBrowser } from "@/components/dashboard/SsiBrowser";
 import { MarketPulse } from "@/components/dashboard/MarketPulse";
+import { MandateCard } from "@/components/dashboard/MandateCard";
 import { Button } from "@/components/ui/button";
 import type { Basket, ExecutionPlan, RiskLevel } from "@/lib/types";
 import type { BacktestResult } from "@/lib/backtest";
@@ -313,6 +314,7 @@ export default function AppPage() {
 
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
             <MarketPulse />
+            <MandateCard basket={basket} amountUsd={lastAmount} />
             {steps.length > 0 && (
               <div data-tour="agent">
                 <AgentLog steps={steps} />
