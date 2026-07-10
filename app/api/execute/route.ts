@@ -159,6 +159,7 @@ export async function POST(req: NextRequest) {
         type: "limit-ioc",
         maxSlippageBps: leg.maxSlippageBps ?? 50,
         dryRun: parsed.dryRun,
+        ownerAddress: parsed.wallet,
       });
       fills.push(fill);
       if (dbEnabled()) {

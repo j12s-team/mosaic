@@ -358,6 +358,49 @@ export interface PlaceOrderInput {
   maxSlippageBps?: number;
   /** Build + sign the order but do NOT send it — logs the would-be request. */
   dryRun?: boolean;
+  /** Wallet that owns the SoDEX account — used to auto-resolve the numeric
+   *  account id via /accounts/{address}/state. */
+  ownerAddress?: string;
+}
+
+// SoDEX account ids are numeric (uint64). Resolution order: SODEX_ACCOUNT_ID
+// env → /accounts/{owner}/state .aid for the connected wallet → same lookup
+// for the signing key's own address. Cached per address.
+const aidCache = new Map<string, number>();
+
+async function getAccountId(owner?: string): Promise<number> {
+  const envId = process.env.SODEX_ACCOUNT_ID;
+  if (envId && /^\d+$/.test(envId.trim())) return Number(envId.trim());
+
+  const candidates: string[] = [];
+  if (owner) candidates.push(owner);
+  if (process.env.SODEX_API_SECRET) {
+    const { privateKeyToAddress } = await import("./eip712");
+    candidates.push(privateKeyToAddress(process.env.SODEX_API_SECRET));
+  }
+  for (const addr of candidates) {
+    const key = addr.toLowerCase();
+    const cached = aidCache.get(key);
+    if (cached !== undefined) return cached;
+    try {
+      const data = await publicGet<Record<string, unknown>>(`/accounts/${addr}/state`);
+      const aid = Number(
+        (data as { aid?: unknown; accountID?: unknown; account_id?: unknown }).aid ??
+          (data as { accountID?: unknown }).accountID ??
+          (data as { account_id?: unknown }).account_id,
+      );
+      if (Number.isFinite(aid) && aid > 0) {
+        aidCache.set(key, aid);
+        console.info(`[sodex] resolved account id ${aid} for ${addr}`);
+        return aid;
+      }
+    } catch (e) {
+      console.warn(`[sodex] account state lookup failed for ${addr}:`, (e as Error).message);
+    }
+  }
+  throw new Error(
+    "cannot resolve SoDEX account id — set SODEX_ACCOUNT_ID (numeric) or connect the wallet that owns the SoDEX account",
+  );
 }
 
 export interface OrderFill {
@@ -426,12 +469,10 @@ async function buildSpotOrderPayload(args: {
   side: "buy" | "sell";
   quantity: number;
   price: number;
+  ownerAddress?: string;
 }) {
-  let accountID = process.env.SODEX_ACCOUNT_ID ?? "";
-  if (!accountID && process.env.SODEX_API_SECRET) {
-    const { privateKeyToAddress } = await import("./eip712");
-    accountID = privateKeyToAddress(process.env.SODEX_API_SECRET);
-  }
+  // uint64 per SoDEX's validator — auto-resolved from /accounts/{addr}/state.
+  const accountID = await getAccountId(args.ownerAddress);
   return {
     accountID,
     orders: [
@@ -490,6 +531,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
     side: input.side,
     quantity,
     price: limitPrice,
+    ownerAddress: input.ownerAddress,
   });
   const payloadJson = JSON.stringify(payload);
   const nonce = Date.now();
