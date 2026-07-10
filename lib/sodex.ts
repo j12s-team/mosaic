@@ -611,6 +611,20 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
   const nonce = Date.now();
   const sign = await signSodexPayload(payloadJson, nonce);
 
+  // Surface the auth identity up front so key-name / key-pairing mistakes are
+  // obvious in the log: X-API-Key must be the REGISTERED KEY NAME (not a hex
+  // public key), and the signer derived from SODEX_API_SECRET must match the
+  // public key registered under that name on THIS network.
+  {
+    const { privateKeyToAddress } = await import("./eip712");
+    const signer = process.env.SODEX_API_SECRET
+      ? privateKeyToAddress(process.env.SODEX_API_SECRET)
+      : "(no SODEX_API_SECRET)";
+    console.info(
+      `[sodex] auth: network=${currentNetwork()} keyName="${process.env.SODEX_API_KEY}" signer=${signer}`,
+    );
+  }
+
   if (input.dryRun || process.env.MOSAIC_DRY_RUN === "1") {
     console.info(`[sodex] DRY RUN — would POST /trade/orders/batch: ${payloadJson}`);
     return {
