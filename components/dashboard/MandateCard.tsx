@@ -42,6 +42,13 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
     }
   }, []);
 
+  /** Tell other panels (ExecutionPreview) that mandate state changed. */
+  const broadcast = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mosaic:mandates-changed"));
+    }
+  }, []);
+
   useEffect(() => {
     const s = getSession();
     if (s?.address) {
@@ -80,6 +87,7 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "mandate rejected");
       await refresh(wallet);
+      broadcast();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -94,7 +102,8 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "revoke", wallet, id }),
     }).catch(() => undefined);
-    refresh(wallet);
+    await refresh(wallet);
+    broadcast();
   }
 
   async function toggleKillSwitch() {
@@ -104,7 +113,8 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "killSwitch", wallet, on: !killSwitch }),
     }).catch(() => undefined);
-    refresh(wallet);
+    await refresh(wallet);
+    broadcast();
   }
 
   if (!wallet || !enabled) return null;

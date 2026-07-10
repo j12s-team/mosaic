@@ -43,25 +43,33 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
   const [mandateChecked, setMandateChecked] = useState(!IS_MAINNET);
 
   // On mainnet, execution requires a signed mandate covering this basket —
-  // look one up for the connected wallet.
+  // look one up for the connected wallet. Re-run the lookup whenever the
+  // Mandates panel signs/revokes one (mosaic:mandates-changed), so the
+  // execute button unlocks the moment a covering mandate exists instead of
+  // waiting for a full page reload.
   useEffect(() => {
     if (!IS_MAINNET) return;
-    const addr = getSession()?.address;
-    if (!addr) {
-      setMandateChecked(true);
-      return;
-    }
-    fetch(`/api/mandate?wallet=${addr}`)
-      .then((r) => r.json())
-      .then((d) => {
-        const now = Date.now() / 1000;
-        const m = (d.mandates ?? []).find(
-          (x: Mandate) => x.basketId === basket.id && x.status === "active" && x.expiry > now,
-        );
-        setMandate(m ?? null);
-      })
-      .catch(() => setMandate(null))
-      .finally(() => setMandateChecked(true));
+    const lookup = () => {
+      const addr = getSession()?.address;
+      if (!addr) {
+        setMandateChecked(true);
+        return;
+      }
+      fetch(`/api/mandate?wallet=${addr}`)
+        .then((r) => r.json())
+        .then((d) => {
+          const now = Date.now() / 1000;
+          const m = (d.mandates ?? []).find(
+            (x: Mandate) => x.basketId === basket.id && x.status === "active" && x.expiry > now,
+          );
+          setMandate(m ?? null);
+        })
+        .catch(() => setMandate(null))
+        .finally(() => setMandateChecked(true));
+    };
+    lookup();
+    window.addEventListener("mosaic:mandates-changed", lookup);
+    return () => window.removeEventListener("mosaic:mandates-changed", lookup);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basket.id]);
 
