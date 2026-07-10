@@ -456,28 +456,71 @@ async function signSodexPayload(payloadJson: string, nonce: number): Promise<str
   return `0x01${sig.slice(2)}`;
 }
 
-// Numeric symbol ids: /markets/symbols returns SpotSymbol{ id, name } rows
-// (name = "vBTC_vUSDC"). Cached 1h.
-let symbolIdCache: { at: number; map: Map<string, number> } | null = null;
+// Numeric symbol ids + trading filters: /markets/symbols returns SpotSymbol
+// rows { id, name, ...precision/filter fields }. Cached 1h; the full row is
+// kept so orders can round price/quantity to the market's tick and step.
+type SymbolRow = Record<string, unknown> & { id?: number; name?: string; displayName?: string };
+let symbolCache: { at: number; map: Map<string, SymbolRow> } | null = null;
 
-async function resolveSymbolId(market: string): Promise<number> {
-  if (!symbolIdCache || Date.now() - symbolIdCache.at > 3_600_000) {
-    const rows = await publicGet<Array<{ id?: number; name?: string; displayName?: string }>>(
-      "/markets/symbols",
-    );
-    const map = new Map<string, number>();
+async function resolveSymbol(market: string): Promise<SymbolRow> {
+  if (!symbolCache || Date.now() - symbolCache.at > 3_600_000) {
+    const rows = await publicGet<SymbolRow[]>("/markets/symbols");
+    const map = new Map<string, SymbolRow>();
     for (const r of rows ?? []) {
-      if (r?.name && typeof r.id === "number") map.set(r.name.toUpperCase(), r.id);
-      if (r?.displayName && typeof r.id === "number") map.set(r.displayName.toUpperCase(), r.id);
+      if (typeof r?.id !== "number") continue;
+      if (r.name) map.set(String(r.name).toUpperCase(), r);
+      if (r.displayName) map.set(String(r.displayName).toUpperCase(), r);
     }
-    symbolIdCache = { at: Date.now(), map };
+    symbolCache = { at: Date.now(), map };
   }
   const wire = toSodexSymbol(market).toUpperCase();
-  const id = symbolIdCache.map.get(wire) ?? symbolIdCache.map.get(market.toUpperCase());
-  if (id === undefined) {
+  const row = symbolCache.map.get(wire) ?? symbolCache.map.get(market.toUpperCase());
+  if (!row) {
     throw new Error(`SoDEX symbol id not found for ${market} (${wire}) — market not listed on ${currentNetwork()}`);
   }
-  return id;
+  return row;
+}
+
+/** First finite number among row[keys] (accepts numeric strings). */
+function pickNum(row: SymbolRow, keys: string[]): number | undefined {
+  for (const k of keys) {
+    const v = row[k];
+    const n = typeof v === "string" || typeof v === "number" ? Number(v) : NaN;
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return undefined;
+}
+
+/** Price tick + quantity step from symbol metadata (several naming schemes). */
+function symbolFilters(row: SymbolRow): { tick: number; step: number } {
+  const tick =
+    pickNum(row, ["tickSize", "priceTick", "priceStep", "minPriceIncrement"]) ??
+    (() => {
+      const prec = pickNum(row, ["pricePrecision", "priceScale", "priceDecimals"]);
+      return prec !== undefined ? 10 ** -prec : undefined;
+    })() ??
+    0.01;
+  const step =
+    pickNum(row, ["stepSize", "qtyStep", "lotSize", "quantityStep", "minQtyIncrement", "baseIncrement"]) ??
+    (() => {
+      const prec = pickNum(row, ["quantityPrecision", "qtyScale", "qtyPrecision", "quantityDecimals", "baseScale"]);
+      return prec !== undefined ? 10 ** -prec : undefined;
+    })() ??
+    0.0001;
+  return { tick, step };
+}
+
+function decimalsOf(increment: number): number {
+  const s = increment.toExponential();
+  const [mant, exp] = s.split("e");
+  const mantDecimals = (mant.split(".")[1] ?? "").length;
+  return Math.max(0, mantDecimals - Number(exp));
+}
+
+/** Snap a value to an increment (floor) and render as a decimal string. */
+function snap(value: number, increment: number): string {
+  const snapped = Math.floor(value / increment + 1e-9) * increment;
+  return snapped.toFixed(decimalsOf(increment));
 }
 
 /**
@@ -495,18 +538,26 @@ async function buildSpotOrderPayload(args: {
   ownerAddress?: string;
 }) {
   const accountID = await getAccountId(args.ownerAddress);
-  const symbolID = await resolveSymbolId(args.market);
+  const row = await resolveSymbol(args.market);
+  const { tick, step } = symbolFilters(row);
+  const price = snap(args.price, tick);
+  const quantity = snap(args.quantity, step);
+  if (process.env.MOSAIC_DEBUG_SODEX === "1") {
+    console.info(
+      `[sodex] ${args.market} meta id=${row.id} tick=${tick} step=${step} → price ${price}, qty ${quantity} | row: ${JSON.stringify(row).slice(0, 400)}`,
+    );
+  }
   return {
     accountID,
     orders: [
       {
-        symbolID,
+        symbolID: row.id as number,
         clOrdID: `mosaic-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
         side: args.side === "buy" ? 1 : 2, // OrderSideEnum
         type: 1, // OrderTypeEnum.LIMIT
         timeInForce: 3, // TimeInForceEnum.IOC
-        quantity: String(args.quantity),
-        price: String(args.price),
+        quantity,
+        price,
       },
     ],
   };
