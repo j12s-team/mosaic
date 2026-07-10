@@ -456,13 +456,36 @@ async function signSodexPayload(payloadJson: string, nonce: number): Promise<str
   return `0x01${sig.slice(2)}`;
 }
 
+// Numeric symbol ids: /markets/symbols returns SpotSymbol{ id, name } rows
+// (name = "vBTC_vUSDC"). Cached 1h.
+let symbolIdCache: { at: number; map: Map<string, number> } | null = null;
+
+async function resolveSymbolId(market: string): Promise<number> {
+  if (!symbolIdCache || Date.now() - symbolIdCache.at > 3_600_000) {
+    const rows = await publicGet<Array<{ id?: number; name?: string; displayName?: string }>>(
+      "/markets/symbols",
+    );
+    const map = new Map<string, number>();
+    for (const r of rows ?? []) {
+      if (r?.name && typeof r.id === "number") map.set(r.name.toUpperCase(), r.id);
+      if (r?.displayName && typeof r.id === "number") map.set(r.displayName.toUpperCase(), r.id);
+    }
+    symbolIdCache = { at: Date.now(), map };
+  }
+  const wire = toSodexSymbol(market).toUpperCase();
+  const id = symbolIdCache.map.get(wire) ?? symbolIdCache.map.get(market.toUpperCase());
+  if (id === undefined) {
+    throw new Error(`SoDEX symbol id not found for ${market} (${wire}) — market not listed on ${currentNetwork()}`);
+  }
+  return id;
+}
+
 /**
- * Spot batch-order payload — shape confirmed by SoDEX's own validator
- * (testnet round-trip 2026-07-09): the endpoint binds the body directly
- * into BatchNewOrderParams{ AccountID, Orders } — no {type, params}
- * wrapper — and AccountID is required. It defaults to the address of the
- * registered signing key; SODEX_ACCOUNT_ID overrides when SoDEX assigns a
- * distinct account id.
+ * Spot batch-order payload — schema per the SoDEX whitepaper
+ * (BatchNewOrderRequest / BatchNewOrderItem), confirmed field-by-field by
+ * the live validator: accountID + symbolID are uint64, side/type/
+ * timeInForce are integer enums (BUY=1 SELL=2 · LIMIT=1 · IOC=3), and
+ * price/quantity are decimal strings.
  */
 async function buildSpotOrderPayload(args: {
   market: string;
@@ -471,17 +494,17 @@ async function buildSpotOrderPayload(args: {
   price: number;
   ownerAddress?: string;
 }) {
-  // uint64 per SoDEX's validator — auto-resolved from /accounts/{addr}/state.
   const accountID = await getAccountId(args.ownerAddress);
+  const symbolID = await resolveSymbolId(args.market);
   return {
     accountID,
     orders: [
       {
-        symbolID: toSodexSymbol(args.market),
+        symbolID,
         clOrdID: `mosaic-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-        side: args.side.toUpperCase(),
-        type: "LIMIT",
-        timeInForce: "IOC",
+        side: args.side === "buy" ? 1 : 2, // OrderSideEnum
+        type: 1, // OrderTypeEnum.LIMIT
+        timeInForce: 3, // TimeInForceEnum.IOC
         quantity: String(args.quantity),
         price: String(args.price),
       },
