@@ -66,35 +66,28 @@ Every loop pass that touches user funds is gated by an explicit confirm.
 ## Architecture
 
 ```
-mosaic/
-├── app/
-│   ├── page.tsx                  Landing page (server-rendered with live SoSoValue data)
-│   ├── app/page.tsx              Interactive dashboard (thesis → basket → backtest → execute → portfolio)
-│   └── api/
-│       ├── thesis/route.ts       POST: build basket + execution plan
-│       ├── backtest/route.ts     POST: backtest + Monte Carlo + scenario stress tests (Wave 2)
-│       ├── execute/route.ts      POST: place orders on SoDEX (explicit confirm flag required)
-│       └── portfolio/route.ts    GET: portfolio + pending rebalance proposals
-├── lib/
-│   ├── sosovalue.ts              Typed SoSoValue API client (news, flows, SSI, metrics)
-│   ├── sodex.ts                  Typed SoDEX client + execution-plan builder + currentNetwork()
-│   ├── agent.ts                  Thesis classifier + risk-aware scoring + softmax weights
-│   ├── historical.ts             Deterministic 180d daily-return seeds for the universe (Wave 2)
-│   ├── backtest.ts               Daily-rebalanced backtest + risk-metric kernel (Wave 2)
-│   ├── montecarlo.ts             Bootstrap MC simulator with VaR / CVaR (Wave 2)
-│   ├── scenarios.ts              COVID / FTX / ETH-ETF stress-test replay (Wave 2)
-│   ├── wallet.ts                 EIP-4361 SIWE flow over window.ethereum (Wave 2)
-│   ├── storage.ts                Per-wallet basket persistence + snapshots (Wave 2)
-│   ├── mock.ts                   Deterministic in-memory data so the demo never breaks
-│   ├── types.ts                  Shared domain types
-│   └── utils.ts
-├── components/
-│   ├── landing/                  Hero / Problem / HowItWorks / LiveData / AgenticLoop / WhyMosaic / CTA / Footer / Navbar
-│   ├── dashboard/                ThesisInput / BasketProposal / BacktestPanel / MonteCarloPanel /
-│   │                             StressTestPanel / ExecutionPreview / Portfolio / MyBaskets /
-│   │                             WalletButton / ProductTour / AgentLog
-│   └── ui/                       button / card / badge / input / progress
-└── tailwind.config.ts            Custom dark-glass theme
+mosaic/                           pnpm + Turborepo monorepo (wave3/dapp)
+├── apps/
+│   ├── site/                     Marketing/landing site (server-rendered live SoSoValue data)
+│   │   ├── app/page.tsx          Landing page
+│   │   └── components/landing/   Hero / Problem / HowItWorks / LiveData / AgenticLoop / …
+│   └── app/                      The platform (wallet-connected dApp)
+│       ├── app/page.tsx          Dashboard (thesis → basket → backtest → execute → portfolio)
+│       ├── app/b/                Shared/public basket pages
+│       ├── app/status/           Internal integration diagnostics (token-gated in prod)
+│       ├── app/api/              thesis / backtest / execute / portfolio / baskets /
+│       │                         mandate / verify / mirror / ssi / market-pulse /
+│       │                         explain / cron/snapshot / diag / health
+│       └── components/dashboard/ ThesisInput / BasketProposal / BacktestPanel / MandateCard / …
+├── packages/
+│   ├── core/                     @mosaic/core — the engine (framework-free TypeScript)
+│   │   └── src/                  agent / sosovalue / sodex / backtest / montecarlo /
+│   │                             scenarios / mandate / eip712 / wallet / storage / db /
+│   │                             snapshotChain / share / mock / types / utils
+│   └── ui/                       @mosaic/ui — design system (MD3 tokens, primitives,
+│                                 ThemeToggle, chart palette, Tailwind preset, styles.css)
+├── turbo.json                    Task pipeline (build / typecheck / test / dev)
+└── pnpm-workspace.yaml
 ```
 
 ### Data sources, end to end
@@ -118,24 +111,25 @@ mosaic/
 ## Quickstart
 
 ```bash
-# 1. install
+# 1. install (pnpm via corepack)
 cd mosaic
-npm install
+corepack enable
+pnpm install
 
 # 2. configure
-cp .env.local.example .env.local
+cp apps/app/.env.local.example apps/app/.env.local
 # fill in SOSOVALUE_API_KEY, SODEX_API_KEY, SODEX_API_SECRET
 # (or leave blank to run on the deterministic mock layer)
 
-# 3. dev
-npm run dev          # http://localhost:3000
+# 3. dev — platform on :3000, marketing site on :3001
+pnpm dev                          # both, via turbo
+pnpm --filter @mosaic/app dev     # platform only
+pnpm --filter @mosaic/site dev    # site only
 
-# 4. typecheck + production build
-npm run typecheck
-npm run build
-
-# Smoke-test the agent + API-client logic in isolation:
-npm run typecheck:libs   # checks only lib/*.ts, no Next/React deps required
+# 4. typecheck + tests + production build
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
 ### Environment
