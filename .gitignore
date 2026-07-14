@@ -7,10 +7,15 @@ node_modules
 .vercel
 .turbo
 *.tsbuildinfo
-design.md
+DESIGN.md
 .claude
 .codex
 .agent
 .gemini
 
 _to_delete/
+
+# Strategy docs — local only, never committed while the repo is public
+BUSINESS_MODEL.md
+AUDIT.md
+PLAN.md

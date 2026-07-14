@@ -215,4 +215,5 @@ clarity pass for Wave 2. Shipping:
 
 ## License
 
-MIT — see `LICENSE`. Built by [Rivaldo](https://github.com/janneh2000) for the SoSoValue Buildathon Wave 1.
+Proprietary — all rights reserved. Source is publicly visible solely for SoSoValue
+Buildathon evaluation; see `LICENSE`. Built by [Rivaldo](https://github.com/janneh2000).
