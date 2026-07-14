@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, product]
+    branches: [main, wave3/dapp]
   pull_request:
-    branches: [main, product]
+    branches: [main, wave3/dapp]
 
 jobs:
   check:
