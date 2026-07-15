@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
 import { themeBootScript } from "@mosaic/ui/ThemeToggle";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
 // deterministic builds (no network fetch at build time).
@@ -15,24 +16,28 @@ const roboto = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Mosaic — Your personal crypto hedge fund, run by an agent",
+  title: "Mosaic — agentic on-chain index manager",
   description:
-    "Describe a thesis. Mosaic uses SoSoValue's index, news and flow data to construct a thematic on-chain portfolio, executes it through SoDEX's orderbook, and proposes rebalances when the data shifts.",
-  keywords: [
-    "SoSoValue",
-    "SoDEX",
-    "ValueChain",
-    "agentic finance",
-    "AI x Web3",
-    "on-chain index",
-    "buildathon",
-  ],
-  openGraph: {
-    title: "Mosaic — Agentic on-chain index manager",
-    description:
-      "Thesis in, thematic index out. Powered by SoSoValue + SoDEX.",
-    type: "website",
+    "Thesis in, thematic on-chain index out. Build, backtest, execute and maintain a risk-aware basket with the Mosaic agent — you stay in the confirm loop.",
+  applicationName: "Mosaic",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Mosaic",
   },
+  openGraph: {
+    title: "Mosaic — agentic on-chain index manager",
+    description: "Thesis in, thematic on-chain index out.",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mosaic" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FDFCFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#1A1C1E" },
+  ],
 };
 
 export default function RootLayout({
@@ -46,7 +51,10 @@ export default function RootLayout({
         {/* Block painting until we've set the theme class to avoid FOUC. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        <OfflineBanner />
+        {children}
+      </body>
     </html>
   );
 }

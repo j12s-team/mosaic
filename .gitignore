@@ -19,3 +19,8 @@ _to_delete/
 BUSINESS_MODEL.md
 AUDIT.md
 PLAN.md
+
+# Serwist build artifacts (apps/app)
+apps/app/public/sw.js
+apps/app/public/sw.js.map
+apps/app/public/swe-worker*.js

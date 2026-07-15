@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 564 564" width="512" height="512" role="img" aria-label="Mosaic logo">
+  <rect x="116" y="0" width="100" height="100" rx="16" fill="#24f0ff"></rect>
+  <rect x="232" y="0" width="100" height="100" rx="16" fill="#319eff"></rect>
+  <rect x="348" y="0" width="100" height="100" rx="16" fill="#5f7bff"></rect>
+  <rect x="0" y="116" width="100" height="100" rx="16" fill="#24f0ff"></rect>
+  <rect x="116" y="116" width="100" height="100" rx="16" fill="#319eff"></rect>
+  <rect x="232" y="116" width="100" height="100" rx="16" fill="#5f7bff"></rect>
+  <rect x="348" y="116" width="100" height="100" rx="16" fill="#a24bff"></rect>
+  <rect x="464" y="116" width="100" height="100" rx="16" fill="#ff2ec8"></rect>
+  <rect x="0" y="232" width="100" height="100" rx="16" fill="#319eff"></rect>
+  <rect x="116" y="232" width="100" height="100" rx="16" fill="#5f7bff"></rect>
+  <rect x="348" y="232" width="100" height="100" rx="16" fill="#ff2ec8"></rect>
+  <rect x="464" y="232" width="100" height="100" rx="16" fill="#ff5f9e"></rect>
+  <rect x="0" y="348" width="100" height="100" rx="16" fill="#5f7bff"></rect>
+  <rect x="116" y="348" width="100" height="100" rx="16" fill="#a24bff"></rect>
+  <rect x="232" y="348" width="100" height="100" rx="16" fill="#ff2ec8"></rect>
+  <rect x="348" y="348" width="100" height="100" rx="16" fill="#ff5f9e"></rect>
+  <rect x="464" y="348" width="100" height="100" rx="16" fill="#ff9d4d"></rect>
+  <rect x="116" y="464" width="100" height="100" rx="16" fill="#ff2ec8"></rect>
+  <rect x="232" y="464" width="100" height="100" rx="16" fill="#ff5f9e"></rect>
+  <rect x="348" y="464" width="100" height="100" rx="16" fill="#ff9d4d"></rect>
+</svg>

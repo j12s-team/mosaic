@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Hexagon } from "lucide-react";
 import { WalletButton } from "@/components/dashboard/WalletButton";
 import { ThemeToggle } from "@mosaic/ui/ThemeToggle";
 
@@ -12,8 +11,9 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface-container">
       <nav className="mx-auto flex h-16 max-w-content items-center justify-between gap-3 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-primary-container">
-            <Hexagon className="h-4 w-4 text-primary" />
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-[#080611] p-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/mosaic-mark-flat.svg" alt="Mosaic" className="h-6 w-6" />
           </span>
           <span className="text-base">Mosaic</span>
           <span
