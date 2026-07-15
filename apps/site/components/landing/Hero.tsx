@@ -1,76 +1,51 @@
 import Link from "next/link";
-import { Button } from "@mosaic/ui/button";
-import { Badge } from "@mosaic/ui/badge";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { ProductPreview } from "@/components/landing/ProductPreview";
+import { ArrowRight } from "lucide-react";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "/app";
+
+/** Brand hero — promise, wordmark, dual CTA, trust chips. */
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
+      <div className="brand-grid-floor" aria-hidden />
+      <div className="brand-scanlines" aria-hidden />
 
-      <div className="relative mx-auto flex max-w-content flex-col items-center px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-20">
-        <Badge variant="brand" className="mb-6">
-          <Sparkles className="h-3 w-3" />
-          <span className="font-mono text-[11px]">SoSoValue · SoDEX · SSI · Agentic AI</span>
-        </Badge>
+      <div className="relative mx-auto flex max-w-content flex-col items-center px-4 pb-20 pt-24 text-center sm:px-6 sm:pt-28">
+        <p className="brand-eyebrow brand-caret mb-8">
+          reads · assembles · routes · rebalances — you confirm{" "}
+        </p>
 
-        <h1 className="max-w-4xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-7xl">
-          Your personal crypto{" "}
-          <span className="text-primary">hedge fund</span>,
-          <br className="hidden sm:block" />
-          run by an agent.
-        </h1>
+        <h1 className="brand-wordmark text-5xl sm:text-7xl md:text-8xl">MOSAIC</h1>
 
-        <p className="mt-6 max-w-2xl text-balance text-lg text-on-surface-variant md:text-xl">
-          Describe a thesis in plain English. Mosaic reads SoSoValue&apos;s news, ETF flows and SSI
-          indices to assemble a thematic on-chain basket, routes it through SoDEX&apos;s orderbook,
-          then keeps watching the data and proposes rebalances — with you in the confirm loop.
+        <p
+          className="mt-8 max-w-2xl text-balance text-xl font-medium leading-snug text-[var(--btext)] sm:text-2xl"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          Your personal crypto hedge fund, run by an agent.
+        </p>
+        <p
+          className="mt-4 max-w-xl text-base leading-relaxed text-[var(--bdim)]"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          Describe a thesis in plain English. Mosaic prices it against live news, ETF flows and
+          index data, assembles a risk-capped basket, and routes it through an orderbook —
+          proposing rebalances as the data shifts.
         </p>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link href={process.env.NEXT_PUBLIC_APP_URL ?? "/app"}>
-            <Button size="lg" className="group">
-              Launch the agent
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Button>
+          <Link href={APP_URL} className="btn-spectrum">
+            Launch the agent <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link href="/#how">
-            <Button size="lg" variant="secondary">
-              See how it works
-            </Button>
+          <Link href="/#loop" className="btn-ghost">
+            See how it works
           </Link>
         </div>
 
-        <div className="mt-6 flex items-center gap-2 text-xs text-on-surface-variant">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-          </span>
-          Live on SoDEX testnet · mainnet read-only · no seed required
-        </div>
-
-        {/* Self-playing product preview — shows the whole loop without a click. */}
-        <div className="mt-12 w-full max-w-2xl">
-          <ProductPreview />
-        </div>
-
-        <div className="mt-14 grid w-full max-w-4xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
-          {[
-            { k: "Data", v: "SoSoValue news · flows · SSI · metrics" },
-            { k: "Execution", v: "SoDEX spot orderbook" },
-            { k: "Agent loop", v: "Detect → Propose → Confirm" },
-            { k: "Status", v: "Live · continuously shipping" },
-          ].map((s) => (
-            <div
-              key={s.k}
-              className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-4 py-3"
-            >
-              <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
-                {s.k}
-              </div>
-              <div className="mt-1 text-sm font-medium leading-snug">{s.v}</div>
-            </div>
-          ))}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
+          <span className="brand-chip">you confirm every move</span>
+          <span className="brand-chip">EIP-712 signed mandates</span>
+          <span className="brand-chip">tamper-evident track records</span>
+          <span className="brand-chip">SoSoValue Buildathon W1 · 8.49/10</span>
         </div>
       </div>
     </section>

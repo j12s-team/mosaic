@@ -15,11 +15,6 @@ DESIGN.md
 
 _to_delete/
 
-# Strategy docs — local only, never committed while the repo is public
-BUSINESS_MODEL.md
-AUDIT.md
-PLAN.md
-
 # Serwist build artifacts (apps/app)
 apps/app/public/sw.js
 apps/app/public/sw.js.map

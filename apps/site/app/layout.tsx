@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
-import { themeBootScript } from "@mosaic/ui/ThemeToggle";
+import "./brand.css";
 import { Analytics } from "@/components/Analytics";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
@@ -50,10 +50,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={roboto.variable}>
+    // The marketing site is brand Layer 1: permanently dark on the void
+    // surface (DESIGN.md) — no theme toggle here; the product app keeps it.
+    <html lang="en" suppressHydrationWarning className={`${roboto.variable} dark`}>
       <head>
-        {/* Block painting until we've set the theme class to avoid FOUC. */}
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {/* Brand-layer typefaces (DESIGN.md Layer 1) — marketing surfaces only.
             TODO(phase-4): self-host these woff2 files per DESIGN.md's
             deterministic-builds rule and switch to next/font/local. */}
