@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@mosaic/ui/card";
+import { MosaicTiles } from "@/components/dashboard/MosaicTiles";
 import { Badge } from "@mosaic/ui/badge";
 import { formatPct, formatUSD } from "@mosaic/core/utils";
 import { getSession } from "@mosaic/core/wallet";
@@ -240,6 +241,9 @@ export function MyBaskets() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm leading-snug">&ldquo;{b.basket.thesis.prompt}&rdquo;</p>
+                  <div className="mt-2">
+                    <MosaicTiles basket={b.basket} compact />
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {b.execution.fills.slice(0, 6).map((f) => (
                       <span

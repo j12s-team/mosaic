@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { ShieldCheck, ShieldAlert, Copy, ArrowRight, Hexagon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@mosaic/ui/card";
+import { MosaicTiles } from "@/components/dashboard/MosaicTiles";
 import { Badge } from "@mosaic/ui/badge";
 import { Button } from "@mosaic/ui/button";
 import { Input } from "@mosaic/ui/input";
@@ -186,6 +187,7 @@ export default function PublicBasketClient({
               <CardDescription>{record.basket.constituents.length} constituents</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
+              <MosaicTiles basket={record.basket} />
               {record.basket.constituents.map((c) => (
                 <div
                   key={c.symbol}

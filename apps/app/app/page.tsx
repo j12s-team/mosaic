@@ -333,16 +333,21 @@ export default function AppPage() {
     <>
       <Navbar />
       <main className="mx-auto max-w-content px-4 pt-6 pb-24 sm:px-6 sm:pt-10">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:mb-8">
+        <div className="tile-in mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Mosaic agent</h1>
-            <p className="mt-1 text-sm text-on-surface-variant">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+              Agent console
+            </p>
+            <h1 className="mt-1.5 text-headline-md tracking-tight sm:text-headline-lg">
+              Mosaic agent
+            </h1>
+            <p className="mt-2 max-w-xl text-body-md text-on-surface-variant">
               {isDesk
                 ? "Thesis → basket → backtest → execution → portfolio. Press ? for shortcuts."
                 : "Five steps from an idea to a tracked, on-chain basket."}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-full bg-surface-container p-1 shadow-elevation-1">
             <ModeToggle mode={mode} onChange={setMode} />
             {isDesk && (
               <Button variant="ghost" size="sm" onClick={() => setTourOpen(true)}>

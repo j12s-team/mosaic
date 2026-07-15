@@ -11,9 +11,12 @@ import type { Basket } from "@mosaic/core/types";
 export function MosaicTiles({
   basket,
   pulseSymbols = [],
+  compact = false,
 }: {
   basket: Basket;
   pulseSymbols?: string[];
+  /** Slim strip for list rows: shorter tiles, symbols only, no caption. */
+  compact?: boolean;
 }) {
   const colors = useChartColors();
   const palette = seriesColors(colors);
@@ -21,7 +24,11 @@ export function MosaicTiles({
 
   return (
     <div>
-      <div className="flex h-28 w-full gap-1 sm:h-32" role="img" aria-label="Basket weight mosaic">
+      <div
+        className={`flex w-full gap-1 ${compact ? "h-9" : "h-28 sm:h-32"}`}
+        role="img"
+        aria-label="Basket weight mosaic"
+      >
         {basket.constituents.map((c, i) => (
           <div
             key={c.symbol}
@@ -41,15 +48,19 @@ export function MosaicTiles({
             <span className="truncate text-[10px] font-medium leading-tight text-white/95 mix-blend-luminosity">
               {c.symbol}
             </span>
-            <span className="text-[9px] tabular-nums text-white/75">
-              {(c.weight * 100).toFixed(0)}%
-            </span>
+            {!compact && (
+              <span className="text-[9px] tabular-nums text-white/75">
+                {(c.weight * 100).toFixed(0)}%
+              </span>
+            )}
           </div>
         ))}
       </div>
-      <p className="mt-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
-        each tile is a position — the mosaic is your basket
-      </p>
+      {!compact && (
+        <p className="mt-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+          each tile is a position — the mosaic is your basket
+        </p>
+      )}
     </div>
   );
 }
