@@ -53,7 +53,7 @@ export default function RootLayout({
         {/* Block painting until we've set the theme class to avoid FOUC. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body className="min-h-screen font-sans">
+      <body className="min-h-screen bg-surface-container-lowest font-sans">
         <Analytics />
         <OfflineBanner />
         {children}

@@ -5,6 +5,7 @@ import { Badge } from "@mosaic/ui/badge";
 import { Progress } from "@mosaic/ui/progress";
 import { formatPct, formatUSD } from "@mosaic/core/utils";
 import { InfoHint } from "@mosaic/ui/info-hint";
+import { MosaicTiles } from "@/components/dashboard/MosaicTiles";
 import type { Basket } from "@mosaic/core/types";
 import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
 import { ExplainBasket } from "./ExplainBasket";
@@ -89,6 +90,8 @@ export function BasketProposal({ basket }: Props) {
             ))}
           </div>
         </div>
+
+        <MosaicTiles basket={basket} />
 
         {/* Per-constituent rationale — revealed one-by-one */}
         <div className="space-y-2">
