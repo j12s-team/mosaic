@@ -296,7 +296,7 @@ export default function AppPage() {
     </div>
   );
   const analysisPanel = basket && (
-    <div data-tour="analysis" id="panel-analysis" className="space-y-6">
+    <div data-tour="analysis" id="panel-analysis" className="tile-in space-y-6">
       {analysing && !backtest && (
         <div className="rounded-md border border-outline-variant bg-surface-container-low p-4 text-sm text-on-surface-variant">
           Running backtest + Monte Carlo + scenario stress tests…
@@ -362,7 +362,7 @@ export default function AppPage() {
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-              <div className="space-y-6">
+              <div className="tile-stagger space-y-6">
                 {thesisPanel}
                 {ssiPanel}
                 {proposalPanel}
@@ -418,7 +418,7 @@ export default function AppPage() {
             </div>
           </>
         ) : (
-          <div className="mx-auto mt-8 max-w-3xl space-y-10">
+          <div className="mx-auto mt-8 max-w-3xl tile-stagger space-y-10">
             <GuidedStep
               step={1}
               title="Describe your thesis"

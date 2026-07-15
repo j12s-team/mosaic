@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@mosaic/ui/card";
 import { Badge } from "@mosaic/ui/badge";
 import { Progress } from "@mosaic/ui/progress";
@@ -94,12 +93,10 @@ export function BasketProposal({ basket }: Props) {
         {/* Per-constituent rationale — revealed one-by-one */}
         <div className="space-y-2">
           {basket.constituents.map((c, i) => (
-            <motion.div
+            <div
               key={c.symbol}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08, duration: 0.3, ease: "easeOut" }}
-              className="rounded-md border border-outline-variant bg-surface-container p-3"
+              className="tile-in rounded-md border border-outline-variant bg-surface-container p-3"
+              style={{ "--tile-i": i } as React.CSSProperties}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -158,7 +155,7 @@ export function BasketProposal({ basket }: Props) {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

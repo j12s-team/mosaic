@@ -16,8 +16,12 @@ export function AgentLog({ steps }: { steps: LogStep[] }) {
         Agent log
       </div>
       <ol className="space-y-2 text-sm">
-        {steps.map((s) => (
-          <li key={s.id} className="flex items-start gap-3">
+        {steps.map((s, i) => (
+          <li
+            key={s.id}
+            className="tile-in flex items-start gap-3"
+            style={{ "--tile-i": i } as React.CSSProperties}
+          >
             <div className="mt-0.5">
               {s.status === "done" ? (
                 <CheckCircle2 className="h-4 w-4 text-success" />

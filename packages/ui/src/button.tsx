@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "class-variance-authority";
  * elevation-1 on hover while keeping the primary fill.
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40",
+  "press-tile inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-label-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {

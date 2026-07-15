@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
+import "@mosaic/ui/motion.css";
 import { themeBootScript } from "@mosaic/ui/ThemeToggle";
 import { Analytics } from "@/components/Analytics";
 import { OfflineBanner } from "@/components/OfflineBanner";

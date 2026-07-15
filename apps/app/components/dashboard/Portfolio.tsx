@@ -287,7 +287,7 @@ function ProposalCard({
   onDismiss: () => void;
 }) {
   return (
-    <div className="rounded-md border border-outline-variant bg-surface-container p-4">
+    <div className="rebalance-pulse rounded-md border border-outline-variant bg-surface-container p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <Badge variant="warning" className="text-[10px]">
