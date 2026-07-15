@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@mosaic/ui/card";
 import { Badge } from "@mosaic/ui/badge";
@@ -116,6 +117,10 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       setStage("review");
       return;
     }
+    track("execution_confirmed", {
+      basketId: plan.basketId,
+      legs: plan.legs.length,
+    });
     try {
       const body = await res.json();
       setReceipt(Array.isArray(body.fills) ? body.fills : []);

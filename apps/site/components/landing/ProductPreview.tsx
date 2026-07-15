@@ -15,7 +15,7 @@ import { useChartColors, tooltipStyle } from "@mosaic/ui/chartColors";
 /**
  * ProductPreview — a self-playing, dependency-free* storyboard of the core
  * Mosaic loop: thesis -> agent -> basket -> backtest & execute. It loops on a
- * timer so judges grasp the whole product in ~10 seconds without clicking.
+ * timer so visitors grasp the whole product in ~10 seconds without clicking.
  *
  * (*framer-motion is already a project dependency; no new packages added.)
  * Honors prefers-reduced-motion by showing the basket frame statically.

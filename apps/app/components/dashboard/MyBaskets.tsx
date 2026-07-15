@@ -43,7 +43,7 @@ export function MyBaskets() {
 
   useEffect(() => {
     // Seed the house namespace with 3 demo baskets + 7d snapshot history
-    // so first-time judges see a realised-return curve immediately.
+    // so first-time users see a realised-return curve immediately.
     seedHouseBasketsIfNeeded();
     const s = getSession();
     setOwner(s?.address ?? HOUSE_OWNER);

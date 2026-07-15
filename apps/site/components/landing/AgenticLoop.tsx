@@ -77,7 +77,7 @@ export function AgenticLoop() {
               <span className="font-medium text-on-surface">Risk control by construction.</span>{" "}
               No market orders. No silent rebalances. No off-chain custody. The agent observes and
               proposes; you sign and ship. Every proposal carries citations — the news item, the
-              flow datapoint, or the metric drift that triggered it — so a judge or a user can
+              flow datapoint, or the metric drift that triggered it — so anyone can
               always verify the reasoning.
             </p>
           </div>

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { dbEnabled, dbGetPublicBasketBySlug } from "@mosaic/core/db";
 import { buildExecutionPlan } from "@mosaic/core/sodex";
 import type { Basket } from "@mosaic/core/types";
@@ -7,10 +6,7 @@ import type { Basket } from "@mosaic/core/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const Body = z.object({
-  slug: z.string().min(1).max(80),
-  amountUsd: z.number().min(10).max(10_000_000),
-});
+import { MirrorRequestSchema as Body } from "@mosaic/core/schemas";
 
 /**
  * POST /api/mirror

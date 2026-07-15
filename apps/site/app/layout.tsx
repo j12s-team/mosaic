@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
 import { themeBootScript } from "@mosaic/ui/ThemeToggle";
+import { Analytics } from "@/components/Analytics";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
 // deterministic builds (no network fetch at build time).
@@ -63,7 +64,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Michroma&family=Space+Grotesk:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap"
         />
       </head>
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        <Analytics />
+        {children}
+      </body>
     </html>
   );
 }

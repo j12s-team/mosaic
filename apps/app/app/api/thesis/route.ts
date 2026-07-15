@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { buildBasket } from "@mosaic/core/agent";
 import { buildExecutionPlan } from "@mosaic/core/sodex";
 
-const Body = z.object({
-  prompt: z.string().min(8).max(500),
-  amountUsd: z.number().min(10).max(10_000_000),
-  risk: z.enum(["conservative", "balanced", "aggressive"]),
-});
+import { ThesisRequestSchema as Body } from "@mosaic/core/schemas";
 
 export async function POST(req: NextRequest) {
   let parsed;

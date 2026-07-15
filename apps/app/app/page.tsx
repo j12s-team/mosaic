@@ -31,6 +31,7 @@ import type { BacktestResult } from "@mosaic/core/backtest";
 import type { MonteCarloResult } from "@mosaic/core/montecarlo";
 import type { ScenarioResult } from "@mosaic/core/scenarios";
 import { sleep } from "@mosaic/core/utils";
+import { track } from "@/lib/analytics";
 import { HelpCircle, AlertTriangle, X } from "lucide-react";
 
 export default function AppPage() {
@@ -87,7 +88,7 @@ export default function AppPage() {
       { id: "plan", label: `Total est. slippage: ${data.plan.estTotalSlippageBps} bps`, status: "done" },
     ]);
     runAnalysis(data.basket);
-    // Scroll the basket into view so judges see the result immediately.
+    // Scroll the basket into view so the result is seen immediately.
     if (typeof window !== "undefined") {
       setTimeout(() => {
         document.querySelector('[data-tour="basket"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -107,6 +108,7 @@ export default function AppPage() {
         body: JSON.stringify({ basket: b, horizonDays: 90 }),
       });
       if (res.ok) {
+        track("backtest_run");
         const data = await res.json();
         setBacktest(data.backtest);
         setMc(data.monteCarlo);
@@ -118,6 +120,7 @@ export default function AppPage() {
   }
 
   async function onSubmit(input: { prompt: string; amountUsd: number; risk: RiskLevel }) {
+    track("thesis_submitted", { risk: input.risk, amountUsd: input.amountUsd });
     setLoading(true);
     setLastAmount(input.amountUsd);
     setLastRisk(input.risk);
@@ -167,6 +170,7 @@ export default function AppPage() {
       result = null;
     }
     if (result && result.basket && result.plan) {
+      track("basket_proposed", { constituents: result.basket.constituents.length });
       setBasket(result.basket);
       setPlan(result.plan);
       await advance("plan", `Total est. slippage: ${result.plan.estTotalSlippageBps} bps`);
@@ -215,6 +219,7 @@ export default function AppPage() {
         });
         if (!res.ok) throw new Error("mirror failed");
         const data: { basket: Basket; plan: ExecutionPlan } = await res.json();
+        track("basket_mirrored", { slug, notional });
         setLastAmount(notional);
         onSsiLoaded({ basket: data.basket, plan: data.plan });
         setSteps([
@@ -376,7 +381,7 @@ export default function AppPage() {
                     Mode
                   </div>
                   <p className="text-sm leading-relaxed">
-                    Demo runs against testnet + mock fallbacks so judges never hit a paywall. Set
+                    Demo mode runs against testnet + mock fallbacks — nothing to configure. Set
                     <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                       SOSOVALUE_API_KEY
                     </span>

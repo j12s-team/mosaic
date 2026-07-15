@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
 import { themeBootScript } from "@mosaic/ui/ThemeToggle";
+import { Analytics } from "@/components/Analytics";
 import { OfflineBanner } from "@/components/OfflineBanner";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
@@ -52,6 +53,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className="min-h-screen font-sans">
+        <Analytics />
         <OfflineBanner />
         {children}
       </body>

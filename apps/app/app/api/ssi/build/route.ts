@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { getSsiIndex } from "@mosaic/core/sosovalue";
 import { buildExecutionPlan } from "@mosaic/core/sodex";
 import { getTokenMetrics } from "@mosaic/core/sosovalue";
 import type { Basket, TokenScore } from "@mosaic/core/types";
 
-const Body = z.object({
-  symbol: z.string().min(2).max(40),
-  amountUsd: z.number().min(10).max(10_000_000),
-  risk: z.enum(["conservative", "balanced", "aggressive"]),
-});
+import { SsiBuildRequestSchema as Body } from "@mosaic/core/schemas";
 
 /**
  * POST /api/ssi/build

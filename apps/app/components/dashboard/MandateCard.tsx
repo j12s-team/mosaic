@@ -7,6 +7,7 @@
 // execution and this card shows exactly how much authority remains:
 // utilisation vs cap, expiry, instant revoke, and the global kill switch.
 
+import { track } from "@/lib/analytics";
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@mosaic/ui/card";
 import { Badge } from "@mosaic/ui/badge";
@@ -86,6 +87,7 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "mandate rejected");
+      track("mandate_signed", { basketId: terms.basketId });
       await refresh(wallet);
       broadcast();
     } catch (err) {

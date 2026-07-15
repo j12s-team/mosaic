@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { RiskLevel } from "@mosaic/core/types";
+import { THESIS_PROMPT_MAX, THESIS_PROMPT_MIN } from "@mosaic/core/schemas";
 
 interface DemoThesis {
   label: string;
@@ -29,7 +30,7 @@ interface DemoThesis {
 
 /**
  * One-click sample theses. Each fills the prompt + amount + risk and submits
- * immediately, so a judge gets a fully-populated basket + backtest in seconds
+ * immediately, so a first-time user gets a fully-populated basket + backtest in seconds
  * with zero setup.
  */
 const DEMOS: DemoThesis[] = [
@@ -92,6 +93,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
   const [prompt, setPrompt] = useState(DEMOS[0].prompt);
   const [amount, setAmount] = useState(1000);
   const [risk, setRisk] = useState<RiskLevel>("balanced");
+  const tooShort = prompt.trim().length < THESIS_PROMPT_MIN;
 
   function runDemo(d: DemoThesis) {
     if (loading) return;
@@ -110,7 +112,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* One-click demo theses — zero setup for judges */}
+        {/* One-click sample theses — zero-setup first run */}
         <div>
           <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary">
             <Zap className="h-3.5 w-3.5" />
@@ -155,10 +157,29 @@ export function ThesisInput({ onSubmit, loading }: Props) {
           <Textarea
             rows={3}
             value={prompt}
+            maxLength={THESIS_PROMPT_MAX}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe what exposure you want, how much, and your risk tolerance."
             className="mt-2"
           />
+          <div className="mt-1.5 flex items-center justify-between text-[11px]">
+            <span
+              className={
+                tooShort ? "text-on-surface-variant" : "invisible"
+              }
+            >
+              At least {THESIS_PROMPT_MIN} characters — tell the agent what exposure you want.
+            </span>
+            <span
+              className={
+                prompt.length >= THESIS_PROMPT_MAX
+                  ? "font-medium text-error"
+                  : "text-on-surface-variant"
+              }
+            >
+              {prompt.length}/{THESIS_PROMPT_MAX}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -217,7 +238,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
             </Badge>
           </div>
           <Button
-            disabled={loading || prompt.length < 8}
+            disabled={loading || tooShort}
             onClick={() => onSubmit({ prompt, amountUsd: amount, risk })}
           >
             <Wand2 className="h-4 w-4" />

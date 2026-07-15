@@ -24,7 +24,7 @@ interface Props {
 
 /**
  * Lets the user one-click pull a SoSoValue SSI index and convert it into a
- * Mosaic basket. This is the "cross-product integration" demo — judges see
+ * Mosaic basket. This is the "cross-product integration" demo — users see
  * the SoSoValue index data flow directly into the SoDEX execution plan.
  */
 export function SsiBrowser({ amountUsd, risk, onLoaded }: Props) {
