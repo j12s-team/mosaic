@@ -49,8 +49,24 @@ function buildSiweMessage(args: {
   ].join("\n");
 }
 
-function nonce() {
+function localNonce() {
   return Math.random().toString(36).slice(2, 18);
+}
+
+/**
+ * 5a: ask the server for a nonce. Returns null when server sessions are
+ * disabled (no SESSION_SECRET) — the flow then degrades to the legacy
+ * client-only session.
+ */
+async function fetchServerNonce(): Promise<string | null> {
+  try {
+    const r = await fetch("/api/auth/nonce");
+    if (!r.ok) return null;
+    const d = (await r.json()) as { enabled?: boolean; nonce?: string };
+    return d.enabled && d.nonce ? d.nonce : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function connectWallet(): Promise<MosaicSession> {
@@ -67,12 +83,36 @@ export async function connectWallet(): Promise<MosaicSession> {
   const domain = typeof window !== "undefined" ? window.location.host : "mosaic.local";
   const issuedAt = new Date().toISOString();
   const statement = "Sign in to Mosaic — your personal crypto hedge fund, run by an agent.";
-  const message = buildSiweMessage({ domain, address, chainId, nonce: nonce(), issuedAt });
+  const serverNonce = await fetchServerNonce();
+  const message = buildSiweMessage({
+    domain,
+    address,
+    chainId,
+    nonce: serverNonce ?? localNonce(),
+    issuedAt,
+  });
 
   const signature = (await window.ethereum.request({
     method: "personal_sign",
     params: [message, address],
   })) as string;
+
+  // 5a: establish the server-verified session (httpOnly cookie). If the
+  // server rejects the proof, fail loudly — a wallet-owned session must not
+  // silently downgrade to client-asserted identity.
+  if (serverNonce) {
+    const res = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, signature }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(
+        (detail as { error?: string }).error ?? "Server rejected the sign-in signature."
+      );
+    }
+  }
 
   const session: MosaicSession = {
     address,
@@ -91,6 +131,12 @@ export async function connectWallet(): Promise<MosaicSession> {
 export function disconnectWallet() {
   if (typeof localStorage !== "undefined") {
     localStorage.removeItem(STORAGE_KEY);
+  }
+  // Clear the server session too (fire-and-forget).
+  try {
+    void fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    /* offline is fine */
   }
 }
 

@@ -7,13 +7,14 @@ import {
   dbGetSnapshots,
 } from "@mosaic/core/db";
 import type { SavedBasket, BasketSnapshot } from "@mosaic/core/storage";
+import { FORBIDDEN, ownerAllowed } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// NOTE on auth: owner is the wallet address string, same trust level as the
-// existing client-side SIWE session. Real signature-verified ownership lands
-// with the mainnet-mandate-execution change.
+// Auth (PLAN.md 5a): wallet owners (0x…) are bound to the server-verified
+// SIWE session cookie when SESSION_SECRET is configured. Non-wallet owners
+// (house baskets, device-local ids) behave as before.
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
   const owner = url.searchParams.get("owner");
   if (!owner) {
     return NextResponse.json({ error: "owner required" }, { status: 400 });
+  }
+  if (!(await ownerAllowed(owner))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
   }
   try {
     const rows = await dbListBaskets(owner);
@@ -75,6 +79,9 @@ export async function POST(req: NextRequest) {
   const record = parsed.record as SavedBasket;
   if (!record?.basket?.id || !record?.execution) {
     return NextResponse.json({ error: "malformed basket record" }, { status: 400 });
+  }
+  if (!(await ownerAllowed(parsed.owner))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
   }
   try {
     await dbSaveBasket(parsed.owner, record);

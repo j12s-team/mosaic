@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbEnabled, dbCloseBasket, dbSetPublic, dbDeleteBasket } from "@mosaic/core/db";
+import { FORBIDDEN, ownerAllowed } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,9 @@ export async function PATCH(
       { status: 400 },
     );
   }
+  if (!(await ownerAllowed(parsed.owner))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
+  }
   try {
     if (parsed.action === "close") {
       await dbCloseBasket(parsed.owner, id);
@@ -54,6 +58,9 @@ export async function DELETE(
   const { id } = await ctx.params;
   const owner = new URL(req.url).searchParams.get("owner");
   if (!owner) return NextResponse.json({ error: "owner required" }, { status: 400 });
+  if (!(await ownerAllowed(owner))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
+  }
   try {
     const ok = await dbDeleteBasket(owner, id);
     return ok

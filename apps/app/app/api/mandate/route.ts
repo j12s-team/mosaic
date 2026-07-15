@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FORBIDDEN, ownerAllowed } from "@/lib/auth";
 import { z } from "zod";
 import { verifyMandateSignature, type Mandate, type MandateTerms } from "@mosaic/core/mandate";
 import {
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
   }
   const wallet = new URL(req.url).searchParams.get("wallet");
   if (!wallet) return NextResponse.json({ error: "wallet required" }, { status: 400 });
+  if (!(await ownerAllowed(wallet))) return NextResponse.json(FORBIDDEN, { status: 403 });
 
   const [mandates, killSwitch] = await Promise.all([dbListMandates(wallet), dbKillSwitch()]);
   const withUtilisation = await Promise.all(
@@ -57,6 +59,9 @@ export async function POST(req: NextRequest) {
       { error: "Invalid input", detail: (err as Error).message },
       { status: 400 },
     );
+  }
+  if (!(await ownerAllowed(body.terms.wallet))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
   }
 
   if (body.terms.expiry <= Math.floor(Date.now() / 1000)) {

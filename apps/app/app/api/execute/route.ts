@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FORBIDDEN, ownerAllowed } from "@/lib/auth";
+import { executionFee } from "@mosaic/core/fees";
 import { z } from "zod";
 import { placeOrder, currentNetwork, type OrderFill } from "@mosaic/core/sodex";
 import { validatePlanAgainstMandate } from "@mosaic/core/mandate";
@@ -57,6 +59,11 @@ export async function POST(req: NextRequest) {
       { error: "Invalid input — explicit confirm flag required", detail },
       { status: 400 }
     );
+  }
+
+  // 5a: a claimed wallet must belong to the verified session (when enforced).
+  if (parsed.wallet && !(await ownerAllowed(parsed.wallet))) {
+    return NextResponse.json(FORBIDDEN, { status: 403 });
   }
 
   const placeable = parsed.legs.filter((l) => l.notionalUsd > 0.01);
@@ -200,6 +207,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Fee accounting scaffold (5b groundwork): computes to $0 unless
+  // MOSAIC_FEE_BPS is set. Recorded in the audit trail + response so the
+  // books exist from day one; no fee is collected anywhere yet.
+  const fee = executionFee(totalNotionalUsd);
+
   if (dbEnabled()) {
     await dbAudit(parsed.wallet ?? "anonymous", "execute", {
       basketId: parsed.basketId,
@@ -208,6 +220,8 @@ export async function POST(req: NextRequest) {
       fills: fills.length,
       errors: legErrors.length,
       dryRun: Boolean(parsed.dryRun),
+      feeBps: fee.bps,
+      feeUsd: fee.usd,
     });
   }
 
@@ -217,6 +231,7 @@ export async function POST(req: NextRequest) {
     mandateId,
     fills,
     legErrors,
+    fee,
     executedAt: new Date().toISOString(),
   });
 }
