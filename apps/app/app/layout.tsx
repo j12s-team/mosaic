@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
 import "@mosaic/ui/motion.css";
-import { themeBootScript } from "@mosaic/ui/ThemeToggle";
+import "@mosaic/ui/brand.css";
 import { Analytics } from "@/components/Analytics";
 import { OfflineBanner } from "@/components/OfflineBanner";
 
@@ -48,12 +48,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={roboto.variable}>
+    // Brand shell (OpenSpec: brand-shell-app): the platform is pinned dark on
+    // the void canvas; MD3 dark tokens carry every operable surface.
+    <html lang="en" suppressHydrationWarning className={`${roboto.variable} dark`}>
       <head>
-        {/* Block painting until we've set the theme class to avoid FOUC. */}
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        {/* Brand-shell typefaces (wordmark + eyebrows only; operable UI stays
+            Roboto). TODO: self-host per DESIGN.md deterministic-builds rule. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Michroma&family=JetBrains+Mono:wght@400;500&display=swap"
+        />
       </head>
-      <body className="min-h-screen bg-surface-container-lowest font-sans">
+      <body className="brand-root min-h-screen font-sans">
         <Analytics />
         <OfflineBanner />
         {children}

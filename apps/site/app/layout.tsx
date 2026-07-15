@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "@mosaic/ui/styles.css";
-import "./brand.css";
+import "@mosaic/ui/brand.css";
 import { Analytics } from "@/components/Analytics";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./styles.css": "./src/styles.css",
+    "./brand.css": "./src/brand.css",
     "./motion.css": "./src/motion.css",
     "./tailwind-preset": "./tailwind-preset.cjs",
     "./chartColors": "./src/chartColors.ts",
