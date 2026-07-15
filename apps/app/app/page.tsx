@@ -382,7 +382,7 @@ export default function AppPage() {
                 {mandatePanel}
                 {agentLogPanel}
                 <div className="rounded-md border border-outline-variant bg-surface-container-low p-4">
-                  <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <div className="mb-2 brand-label">
                     Mode
                   </div>
                   <p className="text-sm leading-relaxed">

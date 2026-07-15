@@ -144,7 +144,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
             <div className="w-full border-t border-outline-variant" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-surface-container-low px-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+            <span className="bg-surface-container-low px-2 brand-label">
               or write your own
             </span>
           </div>

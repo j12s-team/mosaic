@@ -61,7 +61,7 @@ export function BasketProposal({ basket }: Props) {
 
         {/* Stacked weight bar */}
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <div className="brand-label">
             Weights
           </div>
           <div className="mt-2 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-outline-variant/60">

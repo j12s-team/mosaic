@@ -57,7 +57,7 @@ export function MosaicTiles({
         ))}
       </div>
       {!compact && (
-        <p className="mt-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+        <p className="mt-1.5 brand-label">
           each tile is a position — the mosaic is your basket
         </p>
       )}

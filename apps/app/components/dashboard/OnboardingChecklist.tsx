@@ -90,7 +90,7 @@ export function OnboardingChecklist() {
         {allDone && (
           <button
             onClick={() => setCollapsed(true)}
-            className="text-[10px] uppercase tracking-wider text-on-surface-variant hover:text-on-surface"
+            className="brand-label hover:text-on-surface"
           >
             Hide
           </button>
@@ -121,7 +121,7 @@ export function OnboardingChecklist() {
                 </a>
                 <button
                   onClick={markFaucet}
-                  className="text-[10px] uppercase tracking-wider text-on-surface-variant hover:text-on-surface"
+                  className="brand-label hover:text-on-surface"
                 >
                   {state.faucetClaimed ? "Unmark" : "I've claimed"}
                 </button>

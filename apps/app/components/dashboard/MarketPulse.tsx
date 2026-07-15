@@ -77,7 +77,7 @@ export function MarketPulse() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <div className="mb-2 brand-label">
             Movers
           </div>
           {loading ? (
@@ -124,7 +124,7 @@ export function MarketPulse() {
 
         {data && data.ssiMovers && data.ssiMovers.length > 0 && (
           <div>
-            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+            <div className="mb-2 flex items-center gap-1.5 brand-label">
               <Layers className="h-3 w-3" /> SoSoValue SSI movers
             </div>
             <div className="grid gap-1.5 sm:grid-cols-2">
@@ -155,7 +155,7 @@ export function MarketPulse() {
         )}
 
         <div>
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <div className="mb-2 flex items-center gap-1.5 brand-label">
             <Newspaper className="h-3 w-3" /> SoSoValue featured news
           </div>
           {loading ? (

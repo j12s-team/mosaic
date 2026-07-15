@@ -134,7 +134,7 @@ export default function DiagPage() {
         ) : data ? (
           <div className="mt-8 space-y-8">
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+              <h2 className="brand-label">
                 Environment
               </h2>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -152,7 +152,7 @@ export default function DiagPage() {
             </section>
 
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">SoDEX</h2>
+              <h2 className="brand-label">SoDEX</h2>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <StatusCard
                   label="GET /markets/tickers"
@@ -172,7 +172,7 @@ export default function DiagPage() {
             </section>
 
             <section>
-              <h2 className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+              <h2 className="brand-label">
                 SoSoValue
               </h2>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">

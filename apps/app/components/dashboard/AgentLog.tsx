@@ -12,7 +12,7 @@ export interface LogStep {
 export function AgentLog({ steps }: { steps: LogStep[] }) {
   return (
     <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
-      <div className="mb-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+      <div className="mb-2 brand-label">
         Agent log
       </div>
       <ol className="space-y-2 text-sm">

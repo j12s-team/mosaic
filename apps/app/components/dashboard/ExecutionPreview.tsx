@@ -191,7 +191,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-md border border-outline-variant bg-surface-container p-3">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <div className="flex items-center gap-1 brand-label">
             Estimated total slippage (size-weighted)
             <InfoHint
               label="Slippage"
@@ -205,7 +205,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
 
         <div className="overflow-hidden rounded-md border border-outline-variant">
           <table className="w-full text-left text-xs">
-            <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
+            <thead className="bg-surface-container brand-label">
               <tr>
                 <th className="px-3 py-2">Market</th>
                 <th className="px-3 py-2">Side</th>
@@ -327,11 +327,11 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
             </div>
             {receipt.length > 0 && (
               <div className="overflow-hidden rounded-md border border-outline-variant">
-                <div className="border-b border-outline-variant bg-surface-container px-3 py-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                <div className="border-b border-outline-variant bg-surface-container px-3 py-2 brand-label">
                   Execution receipt · predicted vs realised
                 </div>
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <thead className="bg-surface-container brand-label">
                     <tr>
                       <th className="px-3 py-2">Market</th>
                       <th className="px-3 py-2">Status</th>

@@ -62,7 +62,7 @@ export function HealthBanner() {
   return (
     <div className="rounded-md border border-outline-variant bg-surface-container-low dark:bg-surface-container-low p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant">
+        <span className="flex items-center gap-1.5 brand-label">
           <Activity className="h-3 w-3" />
           Status
         </span>

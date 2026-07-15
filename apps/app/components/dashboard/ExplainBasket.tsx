@@ -138,7 +138,7 @@ export function ExplainBasket({ basket, executionNotionalUsd }: Props) {
               )}
 
               <div className="rounded-md border border-outline-variant bg-surface-container p-3 text-xs">
-                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+                <div className="brand-label">
                   Direct share link
                 </div>
                 <div className="mt-1 flex items-center gap-2">

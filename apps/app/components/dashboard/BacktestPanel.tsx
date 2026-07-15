@@ -40,7 +40,7 @@ function Stat({
     tone === "pos" ? "text-success " : tone === "neg" ? "text-error " : "text-on-surface";
   return (
     <div className="rounded-md border border-outline-variant bg-surface-container p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-on-surface-variant">
+      <div className="flex items-center gap-1 brand-label">
         {label}
         {info && <InfoHint label={label} text={info} />}
       </div>
@@ -127,7 +127,7 @@ export function BacktestPanel({ result }: Props) {
 
         <div className="rounded-md border border-outline-variant bg-surface-container p-3">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+            <div className="brand-label">
               Equity curve · drawdown shadow
             </div>
             <LineChart className="h-3 w-3 text-on-surface-variant" />

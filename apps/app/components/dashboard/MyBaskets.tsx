@@ -261,7 +261,7 @@ export function MyBaskets() {
                   </div>
                 </button>
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <div className="brand-label">
                     Realised
                   </div>
                   <div
@@ -326,12 +326,12 @@ export function MyBaskets() {
 
               {isOpen && (
                 <div className="mt-4 rounded-md border border-outline-variant bg-surface-container">
-                  <div className="flex items-center justify-between border-b border-outline-variant px-3 py-2 text-[10px] uppercase tracking-wider text-on-surface-variant">
+                  <div className="flex items-center justify-between border-b border-outline-variant px-3 py-2 brand-label">
                     <span>Executed fills · {new Date(b.execution.executedAt).toLocaleString()}</span>
                     <span>{formatUSD(b.execution.notionalUsd)} total</span>
                   </div>
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
+                    <thead className="bg-surface-container brand-label">
                       <tr>
                         <th className="px-3 py-2">Asset</th>
                         <th className="px-3 py-2 text-right">Weight</th>

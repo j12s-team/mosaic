@@ -201,7 +201,7 @@ export function Portfolio() {
           ) : (
             <div className="overflow-hidden rounded-md border border-outline-variant">
               <table className="w-full text-left text-xs">
-                <thead className="bg-surface-container text-[10px] uppercase tracking-wider text-on-surface-variant">
+                <thead className="bg-surface-container brand-label">
                   <tr>
                     <th className="px-3 py-2">Asset</th>
                     <th className="px-3 py-2 text-right">Weight</th>
@@ -327,7 +327,7 @@ function ProposalCard({
       </div>
 
       <div className="mt-3">
-        <div className="text-[10px] uppercase tracking-wider text-on-surface-variant">
+        <div className="brand-label">
           Citations from SoSoValue
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
