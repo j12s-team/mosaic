@@ -238,6 +238,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
             </Badge>
           </div>
           <Button
+            variant="spectrum"
             disabled={loading || tooShort}
             onClick={() => onSubmit({ prompt, amountUsd: amount, risk })}
           >

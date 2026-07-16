@@ -5,6 +5,7 @@ import "@mosaic/ui/motion.css";
 import "@mosaic/ui/brand.css";
 import { Analytics } from "@/components/Analytics";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { Footer } from "@/components/Footer";
 
 // M3 typography relies on the Roboto family (DESIGN.md). Self-hosted for
 // deterministic builds (no network fetch at build time).
@@ -65,6 +66,7 @@ export default function RootLayout({
         <Analytics />
         <OfflineBanner />
         {children}
+        <Footer />
       </body>
     </html>
   );

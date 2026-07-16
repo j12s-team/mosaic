@@ -8,10 +8,12 @@ type CardVariant = "elevated" | "filled" | "outlined";
  * surface-container fills, elevation-1 for the elevated variant. No
  * translucency or backdrop blur — depth is tonal.
  */
+// Amendment 2 (DESIGN.md): cards mirror the site's brand panels — panel
+// surface + violet hairline. Inner content keeps MD3 token contrast.
 const cardVariants: Record<CardVariant, string> = {
-  elevated: "bg-surface-container-low shadow-elevation-1",
-  filled: "bg-surface-container-highest",
-  outlined: "bg-surface border border-outline-variant",
+  elevated: "bg-[var(--panel)] border border-[var(--line)]",
+  filled: "bg-[var(--panel2)] border border-[var(--line)]",
+  outlined: "bg-transparent border border-[var(--line)]",
 };
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -22,7 +24,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = "elevated", ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-md text-on-surface", cardVariants[variant], className)}
+      className={cn("rounded-lg text-on-surface", cardVariants[variant], className)}
       {...props}
     />
   )

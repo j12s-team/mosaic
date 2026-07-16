@@ -14,6 +14,9 @@ const buttonVariants = cva(
       variant: {
         filled:
           "bg-primary text-on-primary hover:shadow-elevation-1 hover:bg-primary/90 active:bg-primary/85",
+        // Amendment 2: at most ONE spectrum CTA per view (Roboto label).
+        spectrum:
+          "[background:var(--spectrum)] text-[#080611] font-medium hover:brightness-110 hover:shadow-elevation-1",
         tonal:
           "bg-secondary-container text-on-secondary-container hover:shadow-elevation-1 hover:bg-secondary-container/80",
         elevated:

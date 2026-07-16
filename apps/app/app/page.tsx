@@ -335,7 +335,7 @@ export default function AppPage() {
       <main className="mx-auto max-w-content px-4 pt-6 pb-24 sm:px-6 sm:pt-10">
         <div className="tile-in mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
           <div className="min-w-0">
-            <p className="brand-eyebrow" style={{ color: "var(--cyan)" }}>
+            <p className="brand-eyebrow brand-caret" style={{ color: "var(--cyan)" }}>
               mosaic://agent_console
             </p>
             <h1 className="mt-1.5 text-headline-md tracking-tight sm:text-headline-lg">
