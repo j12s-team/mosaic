@@ -17,7 +17,7 @@ import { InfoHint } from "@mosaic/ui/info-hint";
 import { getSession } from "@mosaic/core/wallet";
 import { mandateTypedData, type Mandate, type MandateTerms } from "@mosaic/core/mandate";
 import type { Basket } from "@mosaic/core/types";
-import { ShieldCheck, OctagonX, FileSignature } from "lucide-react";
+import { ShieldCheck, OctagonX, FileSignature, ChevronDown, ChevronRight } from "lucide-react";
 
 type MandateWithUse = Mandate & {
   utilisation: { filledNotionalUsd: number; lastExecutionAt?: string };
@@ -30,6 +30,7 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
   const [killSwitch, setKillSwitch] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const refresh = useCallback(async (addr: string) => {
     try {
@@ -145,48 +146,85 @@ export function MandateCard({ basket, amountUsd }: { basket: Basket | null; amou
           </p>
         )}
 
-        {mandates.map((m) => {
-          const used = m.utilisation.filledNotionalUsd;
-          const pct = Math.min(100, (used / m.maxNotionalUsd) * 100);
-          const expired = Date.now() / 1000 > m.expiry;
-          return (
-            <div
-              key={m.id}
-              className="rounded-md border border-outline-variant bg-surface-container p-3"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={m.status === "active" && !expired ? "success" : "outline"}
-                  >
-                    {m.status === "revoked" ? "revoked" : expired ? "expired" : "active"}
-                  </Badge>
-                  <span className="font-mono text-label-md text-on-surface-variant">
-                    {m.basketId.slice(0, 24)}
-                  </span>
+        {(() => {
+          const now = Date.now() / 1000;
+          const sorted = [...mandates].sort((a, b) =>
+            (b.createdAt ?? "").localeCompare(a.createdAt ?? ""),
+          );
+          const active = sorted.filter((m) => m.status === "active" && m.expiry >= now);
+          const history = sorted.filter((m) => !(m.status === "active" && m.expiry >= now));
+          const visibleHistory = history.slice(0, 10);
+
+          const row = (m: MandateWithUse, i: number) => {
+            const used = m.utilisation.filledNotionalUsd;
+            const pct = Math.min(100, (used / m.maxNotionalUsd) * 100);
+            const expired = now > m.expiry;
+            return (
+              <div
+                key={m.id}
+                className="tile-in rounded-md border border-outline-variant bg-surface-container p-3"
+                style={{ "--tile-i": i } as React.CSSProperties}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Badge variant={m.status === "active" && !expired ? "success" : "outline"}>
+                      {m.status === "revoked" ? "revoked" : expired ? "expired" : "active"}
+                    </Badge>
+                    <span className="truncate font-mono text-label-md text-on-surface-variant">
+                      {m.basketId.slice(0, 24)}
+                    </span>
+                  </div>
+                  {m.status === "active" && !expired && (
+                    <button
+                      type="button"
+                      onClick={() => revoke(m.id)}
+                      className="text-label-md text-error underline-offset-4 hover:underline"
+                    >
+                      revoke
+                    </button>
+                  )}
                 </div>
-                {m.status === "active" && !expired && (
+                <div className="brand-label mt-2 normal-case">
+                  ${used.toLocaleString()} used of ${m.maxNotionalUsd.toLocaleString()} cap ·{" "}
+                  {m.allowedSymbols.length} tokens · ≤{m.maxSlippageBps} bps slip ·{" "}
+                  {m.cooldownHours}h cooldown · {m.vetoWindowHours}h veto
+                </div>
+                <Progress value={pct} className="mt-2" />
+                <div className="brand-label mt-1">
+                  expires {new Date(m.expiry * 1000).toLocaleDateString()}
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <>
+              {active.map(row)}
+
+              {history.length > 0 && (
+                <div>
                   <button
                     type="button"
-                    onClick={() => revoke(m.id)}
-                    className="text-label-md text-error underline-offset-4 hover:underline"
+                    onClick={() => setShowHistory((v) => !v)}
+                    className="brand-label flex w-full items-center gap-1.5 rounded-md border border-outline-variant bg-surface-container px-3 py-2 transition hover:bg-surface-container-high"
+                    aria-expanded={showHistory}
                   >
-                    revoke
+                    {showHistory ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    history · {history.length} revoked / expired
+                    {history.length > 10 ? " · showing last 10" : ""}
                   </button>
-                )}
-              </div>
-              <div className="mt-2 text-label-md text-on-surface-variant">
-                ${used.toLocaleString()} used of ${m.maxNotionalUsd.toLocaleString()} cap ·{" "}
-                {m.allowedSymbols.length} tokens · ≤{m.maxSlippageBps} bps slip ·{" "}
-                {m.cooldownHours}h cooldown · {m.vetoWindowHours}h veto window
-              </div>
-              <Progress value={pct} className="mt-2" />
-              <div className="mt-1 text-label-md text-on-surface-variant">
-                Expires {new Date(m.expiry * 1000).toLocaleDateString()}
-              </div>
-            </div>
+                  {showHistory && (
+                    <div className="mt-3 space-y-3">{visibleHistory.map(row)}</div>
+                  )}
+                </div>
+              )}
+            </>
           );
-        })}
+        })()}
 
         {basket && (
           <Button className="w-full" onClick={signMandate} disabled={busy}>
