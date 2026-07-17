@@ -1,6 +1,6 @@
 "use client";
 
-import { seriesColors, useChartColors } from "@mosaic/ui/chartColors";
+import { assetColor, onAssetColor, seriesColors, useChartColors } from "@mosaic/ui/chartColors";
 import type { Basket } from "@mosaic/core/types";
 
 /**
@@ -29,32 +29,39 @@ export function MosaicTiles({
         role="img"
         aria-label="Basket weight mosaic"
       >
-        {basket.constituents.map((c, i) => (
-          <div
-            key={c.symbol}
-            className={`tile-in flex min-w-0 flex-col justify-end rounded-md p-1.5 ${
-              pulseSymbols.includes(c.symbol) ? "rebalance-pulse" : ""
-            }`}
-            style={
-              {
-                flexGrow: Math.max(c.weight / total, 0.04),
-                flexBasis: 0,
-                background: palette[i % palette.length],
-                "--tile-i": i,
-              } as React.CSSProperties
-            }
-            title={`${c.symbol} ${(c.weight * 100).toFixed(1)}%`}
-          >
-            <span className="truncate text-[10px] font-medium leading-tight text-white/95 mix-blend-luminosity">
-              {c.symbol}
-            </span>
-            {!compact && (
-              <span className="text-[9px] tabular-nums text-white/75">
-                {(c.weight * 100).toFixed(0)}%
+        {basket.constituents.map((c, i) => {
+          const fill = assetColor(c.symbol, palette);
+          const label = onAssetColor(fill);
+          return (
+            <div
+              key={c.symbol}
+              className={`tile-in flex min-w-0 flex-col justify-end rounded-md p-1.5 ${
+                pulseSymbols.includes(c.symbol) ? "rebalance-pulse" : ""
+              }`}
+              style={
+                {
+                  flexGrow: Math.max(c.weight / total, 0.04),
+                  flexBasis: 0,
+                  background: fill,
+                  "--tile-i": i,
+                } as React.CSSProperties
+              }
+              title={`${c.symbol} ${(c.weight * 100).toFixed(1)}%`}
+            >
+              <span
+                className="truncate text-[11px] font-semibold leading-tight"
+                style={{ color: label }}
+              >
+                {c.symbol}
               </span>
-            )}
-          </div>
-        ))}
+              {!compact && (
+                <span className="text-[9px] font-medium tabular-nums" style={{ color: label, opacity: 0.8 }}>
+                  {(c.weight * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
       {!compact && (
         <p className="mt-1.5 brand-label">

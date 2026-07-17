@@ -6,6 +6,7 @@ import { Progress } from "@mosaic/ui/progress";
 import { formatPct, formatUSD } from "@mosaic/core/utils";
 import { InfoHint } from "@mosaic/ui/info-hint";
 import { MosaicTiles } from "@/components/dashboard/MosaicTiles";
+import { assetColor, seriesColors, useChartColors } from "@mosaic/ui/chartColors";
 import type { Basket } from "@mosaic/core/types";
 import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
 import { ExplainBasket } from "./ExplainBasket";
@@ -13,17 +14,6 @@ import { ExplainBasket } from "./ExplainBasket";
 interface Props {
   basket: Basket;
 }
-
-const COLORS = [
-  "bg-primary",
-  "bg-tertiary",
-  "bg-success",
-  "bg-warning",
-  "bg-secondary",
-  "bg-inverse-primary",
-  "bg-error",
-  "bg-primary-container",
-];
 
 export function BasketProposal({ basket }: Props) {
   const riskBand =
@@ -65,22 +55,20 @@ export function BasketProposal({ basket }: Props) {
             Weights
           </div>
           <div className="mt-2 flex h-3 w-full overflow-hidden rounded-full ring-1 ring-outline-variant/60">
-            {basket.constituents.map((c, i) => (
+            {basket.constituents.map((c) => (
               <div
                 key={c.symbol}
-                className={`${COLORS[i % COLORS.length]}`}
-                style={{ width: `${c.weight * 100}%` }}
+                style={{ width: `${c.weight * 100}%`, background: assetColor(c.symbol, dotPalette) }}
                 title={`${c.symbol}: ${(c.weight * 100).toFixed(1)}%`}
               />
             ))}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {basket.constituents.map((c, i) => (
+            {basket.constituents.map((c) => (
               <div key={c.symbol} className="flex items-center gap-2 text-xs">
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    COLORS[i % COLORS.length]
-                  }`}
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: assetColor(c.symbol, dotPalette) }}
                 />
                 <span className="font-medium">{c.symbol}</span>
                 <span className="font-mono text-on-surface-variant">
@@ -105,9 +93,8 @@ export function BasketProposal({ basket }: Props) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${
-                        COLORS[i % COLORS.length]
-                      }`}
+                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                      style={{ background: assetColor(c.symbol, dotPalette) }}
                     />
                     <span className="font-semibold">{c.symbol}</span>
                     <span className="truncate text-xs text-on-surface-variant">{c.name}</span>

@@ -88,3 +88,67 @@ export function useChartColors(): ChartColors {
   }, []);
   return dark ? chartPalette.dark : chartPalette.light;
 }
+
+// ---------------------------------------------------------------------------
+// Canonical asset colors — industry-recognizable brand colors per symbol.
+// This module is the sanctioned literal-color layer (DESIGN.md), so the map
+// lives here. Unknown symbols fall back deterministically to the theme
+// palette (hashed, not positional, so a symbol keeps its color everywhere).
+// ---------------------------------------------------------------------------
+
+const ASSET_COLORS: Record<string, string> = {
+  BTC: "#F7931A",
+  ETH: "#627EEA",
+  SOL: "#9945FF",
+  SOSO: "#319EFF", // brand seed — SoSoValue's own token
+  USDC: "#2775CA",
+  USDT: "#26A17B",
+  BNB: "#F3BA2F",
+  XRP: "#0085C0",
+  ADA: "#2A6AC9",
+  DOGE: "#C2A633",
+  DOT: "#E6007A",
+  AVAX: "#E84142",
+  LINK: "#2A5ADA",
+  UNI: "#FF007A",
+  AAVE: "#B6509E",
+  MATIC: "#8247E5",
+  POL: "#8247E5",
+  ARB: "#28A0F0",
+  OP: "#FF0420",
+  PENDLE: "#22B5A8",
+  RNDR: "#E01E24",
+  MKR: "#1AAB9B",
+  ONDO: "#8FA6FF",
+};
+
+/** Normalize wrapped/staked prefixes: WBTC→BTC, WETH/STETH→ETH, WSOSO→SOSO… */
+function baseSymbol(symbol: string): string {
+  const s = symbol.toUpperCase().replace(/[-/].*$/, "");
+  if (ASSET_COLORS[s]) return s;
+  for (const prefix of ["W", "ST", "R", "CB"]) {
+    if (s.startsWith(prefix) && ASSET_COLORS[s.slice(prefix.length)]) {
+      return s.slice(prefix.length);
+    }
+  }
+  return s;
+}
+
+/** Canonical color for a symbol; deterministic palette fallback otherwise. */
+export function assetColor(symbol: string, fallbackPalette: string[]): string {
+  const base = baseSymbol(symbol);
+  if (ASSET_COLORS[base]) return ASSET_COLORS[base];
+  let h = 0;
+  for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) >>> 0;
+  return fallbackPalette[h % fallbackPalette.length];
+}
+
+/** Readable label color for a fill: YIQ luminance → near-black or white. */
+export function onAssetColor(hex: string): string {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 150 ? "#0B0912" : "#FFFFFF";
+}
