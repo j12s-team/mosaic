@@ -579,6 +579,31 @@ async function buildSpotOrderPayload(args: {
   };
 }
 
+/**
+ * Diagnostic: is SODEX_API_KEY a trading key registered under `address` on the
+ * current network? Hits GET /accounts/{addr}/api-keys?name=… (public read).
+ * Returns { registered, count, error? } — used by /api/diag and surfaced in
+ * the UI so a key/network mismatch is obvious BEFORE a trade fails.
+ */
+export async function checkApiKeyRegistered(
+  address: string,
+): Promise<{ registered: boolean; count: number; keyName: string | null; error?: string }> {
+  const keyName = process.env.SODEX_API_KEY ?? null;
+  if (!keyName) return { registered: false, count: 0, keyName: null, error: "SODEX_API_KEY not set" };
+  try {
+    const data = await publicGet<unknown>(
+      `/accounts/${address}/api-keys?name=${encodeURIComponent(keyName)}`,
+    );
+    const list = Array.isArray(data) ? data : Array.isArray((data as { keys?: unknown[] })?.keys) ? (data as { keys: unknown[] }).keys : [];
+    const match = list.some(
+      (k) => typeof k === "object" && k !== null && String((k as { name?: unknown }).name ?? "") === keyName,
+    );
+    return { registered: match, count: list.length, keyName };
+  } catch (e) {
+    return { registered: false, count: 0, keyName, error: (e as Error).message };
+  }
+}
+
 export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
   // Pre-trade estimate from the live orderbook — also the reconciliation
   // baseline for realised-slippage reporting.
@@ -683,7 +708,23 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
     throw new Error(`SoDEX order: unparseable response: ${bodyText.slice(0, 200)}`);
   }
   if (env.code !== 0) {
-    throw new Error(`SoDEX order code ${env.code}: ${env.error ?? "unknown error"}`);
+    const msg = String(env.error ?? "unknown error");
+    // "API key not found" (code -1) is a CREDENTIAL/REGISTRATION problem, not
+    // a signing one — the gateway rejects the X-API-Key value before checking
+    // the signature. Give the operator the exact remedy (SoDEX docs:
+    // /accounts/{addr}/api-keys). The SoDEX *trading* key is created in the
+    // SoDEX app under your wallet on THIS network — it is NOT the SoSoValue
+    // market-data key that powers the read side.
+    if (env.code === -1 || /api key not found|key not found|invalid api key/i.test(msg)) {
+      throw new Error(
+        `SoDEX order code ${env.code}: ${msg}. ` +
+          `SODEX_API_KEY must be the NAME of a trading API key registered under your ` +
+          `wallet on SoDEX ${currentNetwork()} (create it in the SoDEX app → API keys, ` +
+          `not the SoSoValue market-data key). Verify with GET ` +
+          `${baseUrl()}/accounts/{yourWallet}/api-keys?name=${process.env.SODEX_API_KEY}`,
+      );
+    }
+    throw new Error(`SoDEX order code ${env.code}: ${msg}`);
   }
 
   // Parse fill info defensively — exact response shape verified at live-run.

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllTickers, getWalletBalances, currentNetwork } from "@mosaic/core/sodex";
+import { getAllTickers, getWalletBalances, currentNetwork, checkApiKeyRegistered } from "@mosaic/core/sodex";
 import { getFeaturedNews, listSsiIndexes, getTokenMetrics } from "@mosaic/core/sosovalue";
 
 /**
@@ -14,6 +14,10 @@ export async function GET(req: Request) {
   const address = searchParams.get("address") ?? undefined;
 
   const sample = <T,>(arr: T[], n: number): T[] => arr.slice(0, n);
+
+  const apiKey = address
+    ? await checkApiKeyRegistered(address).catch((e) => ({ registered: false, count: 0, keyName: null, error: (e as Error).message }))
+    : { skipped: "no ?address= param — needed to verify trading key registration" };
 
   const [tickers, news, ssi, btcMetrics, taoMetrics, balances] = await Promise.all([
     getAllTickers().then((r) => ({ count: r.length, sample: sample(r, 5) })).catch((e) => ({ error: (e as Error).message })),
@@ -36,6 +40,7 @@ export async function GET(req: Request) {
     sodex: {
       tickers,
       walletBalances: balances,
+      tradingKeyRegistered: apiKey,
     },
     sosovalue: {
       news,
