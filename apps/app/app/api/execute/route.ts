@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { FORBIDDEN, ownerAllowed } from "@/lib/auth";
 import { executionFee } from "@mosaic/core/fees";
 import { z } from "zod";
-import { placeOrder, currentNetwork, type OrderFill } from "@mosaic/core/sodex";
+import { placeOrder, currentNetwork, liveTradingEnabled, demoTradingReason, type OrderFill } from "@mosaic/core/sodex";
 import { validatePlanAgainstMandate } from "@mosaic/core/mandate";
 import {
   dbEnabled,
@@ -207,6 +207,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Live trading with zero fills is a FAILURE, not a success (fix:
+  // simulated-as-real bug). Surface every leg error; never fake a receipt.
+  if (liveTradingEnabled() && fills.length === 0 && legErrors.length > 0) {
+    return NextResponse.json(
+      { error: "No orders were placed — every leg failed at SoDEX.", legErrors, mode: "live" },
+      { status: 502 },
+    );
+  }
+
   // Fee accounting scaffold (5b groundwork): computes to $0 unless
   // MOSAIC_FEE_BPS is set. Recorded in the audit trail + response so the
   // books exist from day one; no fee is collected anywhere yet.
@@ -228,6 +237,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     basketId: parsed.basketId,
     network,
+    mode: liveTradingEnabled() ? "live" : "demo",
+    demoReason: demoTradingReason(),
     mandateId,
     fills,
     legErrors,

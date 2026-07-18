@@ -40,6 +40,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
   const [failed, setFailed] = useState(false);
   const [gateReasons, setGateReasons] = useState<string[]>([]);
   const [receipt, setReceipt] = useState<ReceiptFill[]>([]);
+  const [execMode, setExecMode] = useState<"live" | "demo" | null>(null);
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [mandateChecked, setMandateChecked] = useState(!IS_MAINNET);
 
@@ -107,6 +108,12 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         const body = await res.json();
         if (Array.isArray(body.reasons)) {
           setGateReasons(body.reasons.map((r: { rule: string; detail: string }) => `${r.rule}: ${r.detail}`));
+        } else if (Array.isArray(body.legErrors) && body.legErrors.length > 0) {
+          // Live SoDEX failure — show the ACTUAL per-leg errors, never a fake success.
+          setGateReasons([
+            body.error ?? "SoDEX rejected the order.",
+            ...body.legErrors.map((e: { market: string; error: string }) => `${e.market}: ${e.error}`),
+          ]);
         } else if (body.error) {
           setGateReasons([body.error]);
         }
@@ -121,39 +128,64 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
       basketId: plan.basketId,
       legs: plan.legs.length,
     });
+    let fills: ReceiptFill[] = [];
+    let mode: "live" | "demo" = "live";
     try {
       const body = await res.json();
-      setReceipt(Array.isArray(body.fills) ? body.fills : []);
+      fills = Array.isArray(body.fills) ? body.fills : [];
+      mode = body.mode === "demo" ? "demo" : "live";
+      setReceipt(fills);
+      setExecMode(mode);
     } catch {
       setReceipt([]);
     }
 
-    // Persist the basket so the "thesis vs realised" loop can begin.
-    // Writes to the local cache and — when DATABASE_URL is configured —
-    // to Postgres, where the server records a chained t=0 snapshot.
+    // Persist portfolio state ONLY from confirmed results (simulated-as-real
+    // fix): in live mode the record is built from the venue's actual fills
+    // (real avgPrice / filled notional). Demo mode persists plan estimates,
+    // clearly the demo story. Live with zero confirmed fills persists
+    // nothing — a SUBMITTED-but-unconfirmed order must not fake a position.
+    const confirmed = fills.filter((f) => !f.simulated && !f.dryRun && f.filledNotionalUsd > 0);
     const owner = getSession()?.address ?? HOUSE_OWNER;
-    await saveBasketEverywhere(owner, {
-      basket,
-      execution: {
-        executedAt: new Date().toISOString(),
-        notionalUsd: plan.totalNotionalUsd,
-        fills: plan.legs.map((l) => ({
-          symbol: l.market.split("/")[0],
-          price: l.estPrice,
-          weight: l.notionalUsd / plan.totalNotionalUsd,
-        })),
-      },
-      savedAt: new Date().toISOString(),
-      status: "active",
-    });
-    // Initial t=0 snapshot — realised return starts at 0%.
-    appendSnapshot(owner, {
-      basketId: basket.id,
-      takenAt: new Date().toISOString(),
-      marketValueUsd: plan.totalNotionalUsd,
-      pnlUsd: 0,
-      pnlPct: 0,
-    });
+    const liveTotal = +confirmed.reduce((t, f) => t + f.filledNotionalUsd, 0).toFixed(2);
+    const shouldPersist = mode === "demo" || confirmed.length > 0;
+
+    if (shouldPersist) {
+      const record =
+        mode === "live"
+          ? {
+              executedAt: new Date().toISOString(),
+              notionalUsd: liveTotal,
+              fills: confirmed.map((f) => ({
+                symbol: f.market.split("/")[0],
+                price: f.avgPrice,
+                weight: f.filledNotionalUsd / (liveTotal || 1),
+              })),
+            }
+          : {
+              executedAt: new Date().toISOString(),
+              notionalUsd: plan.totalNotionalUsd,
+              fills: plan.legs.map((l) => ({
+                symbol: l.market.split("/")[0],
+                price: l.estPrice,
+                weight: l.notionalUsd / plan.totalNotionalUsd,
+              })),
+            };
+      await saveBasketEverywhere(owner, {
+        basket,
+        execution: record,
+        savedAt: new Date().toISOString(),
+        status: "active",
+      });
+      // Initial t=0 snapshot — realised return starts at 0%.
+      appendSnapshot(owner, {
+        basketId: basket.id,
+        takenAt: new Date().toISOString(),
+        marketValueUsd: record.notionalUsd,
+        pnlUsd: 0,
+        pnlPct: 0,
+      });
+    }
 
     setStage("done");
     onExecuted?.();
@@ -310,12 +342,27 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
         )}
 
         {stage === "done" && (
-          <div className="space-y-3 rounded-md border border-success/20 bg-success/5 p-4 text-sm">
+          <div
+            className={`space-y-3 rounded-md border p-4 text-sm ${
+              execMode === "demo"
+                ? "border-warning/40 bg-warning/10"
+                : "border-success/20 bg-success/5"
+            }`}
+          >
+            {execMode === "demo" && (
+              <div className="flex items-start gap-2 rounded-sm border border-warning/40 bg-warning/15 p-2 text-xs font-medium text-on-warning-container">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                DEMO MODE — these fills are SIMULATED. No real order was placed on SoDEX and no
+                on-chain transaction exists. Configure SODEX_API_KEY / SODEX_API_SECRET (mocks off)
+                to trade live.
+              </div>
+            )}
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
               <div className="space-y-1">
                 <p className="font-medium">
-                  Basket executed · {plan.legs.length} legs routed to SoDEX{" "}
+                  {execMode === "demo" ? "Demo run complete" : "Basket executed"} ·{" "}
+                  {plan.legs.length} legs routed to SoDEX{" "}
                   {process.env.NEXT_PUBLIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}.
                 </p>
                 <p className="text-xs text-on-surface-variant">
@@ -368,7 +415,24 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
                     ))}
                   </tbody>
                 </table>
-                {receipt.some((f) => f.simulated) && (
+                {receipt.some((f) => !f.simulated && !f.dryRun) && (
+              <div className="space-y-1">
+                {receipt
+                  .filter((f) => !f.simulated && !f.dryRun)
+                  .map((f) => (
+                    <a
+                      key={f.orderId}
+                      href={`${process.env.NEXT_PUBLIC_SODEX_EXPLORER_URL ?? "https://testnet.sodex.dev"}/orders/${f.orderId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="brand-label block text-primary underline-offset-4 hover:underline"
+                    >
+                      {f.market} · order {f.orderId} → verify on SoDEX
+                    </a>
+                  ))}
+              </div>
+            )}
+            {receipt.some((f) => f.simulated) && (
                   <div className="border-t border-outline-variant px-3 py-2 text-[10px] text-on-surface-variant">
                     Simulated fills — arm MOSAIC_REAL_ORDERS with SoDEX credentials for live transport.
                   </div>

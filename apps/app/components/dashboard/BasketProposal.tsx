@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function BasketProposal({ basket }: Props) {
+  const dotPalette = seriesColors(useChartColors());
   const riskBand =
     basket.riskScore < 30 ? "Low" : basket.riskScore < 60 ? "Moderate" : "High";
   const riskVariant =

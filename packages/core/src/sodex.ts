@@ -405,7 +405,7 @@ async function getAccountId(owner?: string): Promise<number> {
 
 export interface OrderFill {
   orderId: string;
-  status: "FILLED" | "PARTIAL" | "REJECTED" | "SIMULATED" | "DRY_RUN";
+  status: "FILLED" | "PARTIAL" | "REJECTED" | "SIMULATED" | "DRY_RUN" | "SUBMITTED";
   filledNotionalUsd: number;
   avgPrice: number;
   market: string;
@@ -418,14 +418,30 @@ export interface OrderFill {
   note?: string;
 }
 
-/** True when real order transport is armed (creds + explicit opt-in). */
+/**
+ * Demo mode — the ONLY condition under which fills may be simulated:
+ * mocks explicitly forced, or no SoDEX credentials configured (zero-config
+ * demo). With credentials present and mocks off, trading is LIVE on the
+ * configured network; there is no arming flag and no silent fallback.
+ * Returns the human-readable reason, or null when trading is live.
+ */
+export function demoTradingReason(): string | null {
+  if (useMocks()) return "MOSAIC_USE_MOCKS is forcing the mock layer";
+  if (!process.env.SODEX_API_KEY || !process.env.SODEX_API_SECRET)
+    return "SODEX_API_KEY / SODEX_API_SECRET not configured";
+  return null;
+}
+
+/** True when confirmed trades place real SoDEX orders. */
+export function liveTradingEnabled(): boolean {
+  return demoTradingReason() === null;
+}
+
+/** @deprecated MOSAIC_REAL_ORDERS no longer gates transport (fix: simulated-
+ * as-real bug). Live trading is on whenever credentials exist and mocks are
+ * off; MOSAIC_DRY_RUN remains the explicit safety valve. */
 export function realOrdersEnabled(): boolean {
-  return (
-    !useMocks() &&
-    process.env.MOSAIC_REAL_ORDERS === "true" &&
-    Boolean(process.env.SODEX_API_KEY) &&
-    Boolean(process.env.SODEX_API_SECRET)
-  );
+  return liveTradingEnabled();
 }
 
 /**
@@ -579,8 +595,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
 
   const cap = input.maxSlippageBps ?? 50;
 
-  // Simulated path: mocks on, transport not armed, or missing credentials.
-  if (!realOrdersEnabled()) {
+  // DEMO path — explicitly labeled; never reached when credentials exist
+  // and mocks are off (see demoTradingReason()).
+  if (!liveTradingEnabled()) {
     return {
       orderId: `sim-${Date.now()}`,
       status: "SIMULATED",
@@ -592,7 +609,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
       estSlippageBps,
       realisedSlippageBps: estSlippageBps,
       simulated: true,
-      note: "Simulated fill — set MOSAIC_REAL_ORDERS=true with SoDEX credentials to arm live transport.",
+      note: `DEMO MODE (${demoTradingReason()}) — simulated fill, no real order placed.`,
     };
   }
 
@@ -683,9 +700,17 @@ export async function placeOrder(input: PlaceOrderInput): Promise<OrderFill> {
       : undefined;
   const fullyFilled = filledNotionalUsd >= input.notionalUsd * 0.99;
 
+  const orderId = String(first.orderID ?? first.orderId ?? first.clOrdID ?? `sodex-${nonce}`);
+  const explicitlyRejected = /reject/i.test(String(first.status ?? first.ordStatus ?? ""));
   return {
-    orderId: String(first.orderID ?? first.orderId ?? first.clOrdID ?? `sodex-${nonce}`),
-    status: filledNotionalUsd <= 0 ? "REJECTED" : fullyFilled ? "FILLED" : "PARTIAL",
+    orderId,
+    status: explicitlyRejected
+      ? "REJECTED"
+      : filledNotionalUsd <= 0
+        ? "SUBMITTED" // accepted by SoDEX; fill not in immediate response — verify on the venue by orderId
+        : fullyFilled
+          ? "FILLED"
+          : "PARTIAL",
     filledNotionalUsd,
     avgPrice,
     market: input.market,
