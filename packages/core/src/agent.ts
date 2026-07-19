@@ -10,6 +10,7 @@
 import { z } from "zod";
 import type { Basket, RiskLevel, Theme, Thesis, TokenScore } from "./types";
 import { getCandidateUniverse, type TokenMetrics } from "./sosovalue";
+import { listedBaseSymbols } from "./sodex";
 
 // Each keyword carries a weight; the classifier sums weights per theme so a
 // thesis like "AI infrastructure with some L2 hedge" produces a mixed basket
@@ -171,7 +172,11 @@ function capWeights(weights: number[], cap: number) {
 
 export async function buildBasket(thesis: Thesis): Promise<Basket> {
   const plan = (await classifyByClaude(thesis)) ?? classifyByKeywords(thesis);
-  const universe = await getCandidateUniverse();
+  // Only consider tokens with a live SoDEX market on this network, so the
+  // agent never proposes an untradable leg (e.g. MKR on mainnet). Empty set
+  // (offline/mock) => permissive, preserves the demo.
+  const listed = await listedBaseSymbols().catch(() => new Set<string>());
+  const universe = await getCandidateUniverse(listed);
 
   const ranked = universe
     .map((t) => ({ token: t, ...scoreToken(t, plan) }))

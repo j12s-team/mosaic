@@ -1,90 +1,68 @@
 import { NextResponse } from "next/server";
-import { getFeaturedNews, getLivePrices, listSsiIndexes } from "@mosaic/core/sosovalue";
+import { getFeaturedNews, listSsiIndexes } from "@mosaic/core/sosovalue";
+import { getAllTickers, currentNetwork } from "@mosaic/core/sodex";
 
-// Live data — never serve a build-time snapshot (fix: app showed demo/mock
-// while the site showed live). Re-runs per request with the current env.
+// Live data — never serve a build-time snapshot. Re-runs per request; the
+// underlying SoSoValue/SoDEX clients cache + rate-limit, so this is cheap.
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/market-pulse
  *
- * Cross-API integration tile. Mixes:
- *  - live spot prices for a curated set of majors (SoSoValue token metrics)
- *  - top SSI indices ranked by 24h move (SoSoValue SSI list)
- *  - latest featured news (SoSoValue news)
- *
- * SoDEX testnet tickers are intentionally NOT used as the price source here
- * — testnet prints synthetic prices (SOL @ $140 etc.) that confused users.
- * Real spot prices come from SoSoValue; SoDEX is the execution venue, not
- * the quote source.
+ * Movers + SSI + news. QUOTA-AWARE: the SoSoValue Demo plan is only
+ * 10k calls/month · 10/min, so we do NOT price a basket of majors via
+ * per-symbol SoSoValue snapshots here (that was ~18 calls/load). Instead:
+ *  - Prices: SoDEX `/markets/tickers` — ONE cached, quota-free call. On
+ *    mainnet these are real spot; on testnet they're synthetic (labeled).
+ *  - SSI movers + featured news: SoSoValue (2 calls, heavily cached).
  */
-const MAJORS = [
-  "BTC",
-  "ETH",
-  "SOL",
-  "BNB",
-  "XRP",
-  "DOGE",
-  "ADA",
-  "AVAX",
-  "TAO",
-  "WLD",
-  "LDO",
-  "ONDO",
-  "RNDR",
-  "FET",
-  "IO",
-  "PEPE",
-  "WIF",
-  "FIL",
-];
+const MAJORS = new Set([
+  "BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX", "TAO", "WLD",
+  "LDO", "ONDO", "RNDR", "RENDER", "FET", "IO", "PEPE", "WIF", "FIL", "LINK",
+  "UNI", "AAVE", "ARB", "OP", "SOSO",
+]);
 
 export async function GET() {
-  const [prices, news, ssi] = await Promise.all([
-    getLivePrices(MAJORS).catch(() => []),
+  const network = currentNetwork();
+  const [sodexTickers, news, ssi] = await Promise.all([
+    getAllTickers().catch(() => []),
     getFeaturedNews({ pageSize: 6 }).catch(() => []),
     listSsiIndexes().catch(() => []),
   ]);
 
-  // Movers — sort by absolute 24h move, take the top 8.
-  const tickers = prices
-    .filter((p) => p.price > 0)
-    .sort((a, b) => Math.abs(b.changePct24h) - Math.abs(a.changePct24h))
+  // Movers from SoDEX tickers (quota-free). Curate to majors, rank by |24h|.
+  const tickers = sodexTickers
+    .filter((t) => t.lastPrice > 0 && MAJORS.has(t.base.toUpperCase()))
+    .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
     .slice(0, 8)
-    .map((p) => ({
-      symbol: p.symbol,
-      display: `${p.symbol}/USDC`,
-      lastPrice: p.price,
-      changePct: p.changePct24h,
-      source: p.source,
+    .map((t) => ({
+      symbol: t.base,
+      display: t.display,
+      lastPrice: t.lastPrice,
+      changePct: t.changePct,
+      source: "sodex" as const,
     }));
 
-  // SSI movers — sort by absolute change, keep top 4.
   const ssiMovers = ssi
     .filter((idx) => typeof idx.changePct === "number")
-    .sort((a, b) => Math.abs((b.changePct ?? 0)) - Math.abs((a.changePct ?? 0)))
+    .sort((a, b) => Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0))
     .slice(0, 4)
-    .map((idx) => ({
-      symbol: idx.symbol,
-      name: idx.name,
-      changePct: idx.changePct ?? 0,
-    }));
+    .map((idx) => ({ symbol: idx.symbol, name: idx.name, changePct: idx.changePct ?? 0 }));
 
-  // Honest sourcing. Prices come via SoSoValue market-snapshot; news/SSI via
-  // other endpoints. Report each independently so a single failing endpoint
-  // isn't mislabeled as "all demo", and expose WHY when not live.
-  // "live" tracks the one reliable per-item signal: did a price actually come
-  // from SoSoValue (source==="sosovalue") vs the curated seed table. When not
-  // live, `reason` says WHY so the cause is visible in-app, not a silent pill.
-  const live = tickers.some((t) => t.source === "sosovalue");
+  // Prices are live whenever SoDEX returned real markets. On mainnet that's
+  // real spot; on testnet the prices are synthetic, so we flag that.
+  const pricesLive = tickers.length > 0;
+  const live = pricesLive || ssiMovers.length > 0;
   const hasKey = Boolean(process.env.SOSOVALUE_API_KEY);
   const forcedMocks = process.env.MOSAIC_USE_MOCKS === "true";
-  const reason = !hasKey
-    ? "SOSOVALUE_API_KEY is not set in this environment"
-    : forcedMocks
+  const reason = !live
+    ? forcedMocks
       ? "MOSAIC_USE_MOCKS=true is forcing the mock layer"
-      : !live
-        ? "SoSoValue returned no live prices — check server logs (MOSAIC_DEBUG_SODEX=1)"
+      : "No live SoDEX markets or SoSoValue indices returned"
+    : network === "testnet"
+      ? "SoDEX testnet prices are synthetic"
+      : !hasKey
+        ? "SSI/news show demo data — SOSOVALUE_API_KEY not set"
         : null;
 
   return NextResponse.json({
@@ -93,8 +71,8 @@ export async function GET() {
     news: news.slice(0, 5),
     live,
     reason,
-    sosoConfigured: hasKey && !forcedMocks,
-    priceSource: live ? "SoSoValue market snapshots" : "curated seed prices",
+    network,
+    priceSource: network === "mainnet" ? "SoDEX mainnet spot" : "SoDEX testnet (synthetic)",
     fetchedAt: new Date().toISOString(),
   });
 }

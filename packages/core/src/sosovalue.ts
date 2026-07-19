@@ -140,6 +140,18 @@ function pctToFraction(v: unknown): number {
 const memCache = new Map<string, { at: number; data: unknown }>();
 let cooldownUntil = 0;
 
+// Hard per-minute rate cap. The Demo plan allows 10 req/min; we self-limit to
+// 8 to leave headroom, so we never trip a 429 that then trips the cooldown.
+const RATE_MAX_PER_MIN = 8;
+let rateWindow: number[] = [];
+function underRateCap(): boolean {
+  const now = Date.now();
+  rateWindow = rateWindow.filter((t) => now - t < 60_000);
+  if (rateWindow.length >= RATE_MAX_PER_MIN) return false;
+  rateWindow.push(now);
+  return true;
+}
+
 function ttlFor(path: string): number {
   // Longer TTLs to conserve the SoSoValue monthly quota — the movers tile
   // fires ~18 per-symbol market-snapshot calls, so short windows exhaust the
@@ -149,7 +161,8 @@ function ttlFor(path: string): number {
   }
   if (path.includes("klines")) return 60 * 60_000; // momentum inputs: 1h
   if (path.includes("/news")) return 30 * 60_000; // headlines: 30m
-  return 15 * 60_000; // snapshots / indices: 15m
+  if (path.includes("/index")) return 30 * 60_000; // SSI list: 30m
+  return 15 * 60_000; // snapshots: 15m
 }
 
 /** Run `fn` over items with at most `limit` in flight. */
@@ -179,6 +192,11 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (Date.now() < cooldownUntil) {
     if (stale !== undefined) return stale;
     throw new Error("SoSoValue rate-limit cooldown — serving fallbacks");
+  }
+  // Self-imposed per-minute cap: prefer stale/fallback over a 429.
+  if (!underRateCap()) {
+    if (stale !== undefined) return stale;
+    throw new Error("SoSoValue local rate cap reached — serving fallbacks");
   }
 
   let res: Response;
@@ -596,12 +614,22 @@ export async function getTokenMetrics(symbol: string): Promise<TokenMetrics | nu
   return fallback;
 }
 
-export async function getCandidateUniverse(): Promise<TokenMetrics[]> {
-  // For Buildathon scope, the candidate universe is the tokens we know
-  // SoDEX supports. In production this would be /index/list ∪ /token/list.
-  const symbols = Object.keys(MOCK_TOKENS);
-  const all = await Promise.all(symbols.map((s) => getTokenMetrics(s)));
-  return all.filter((x): x is TokenMetrics => Boolean(x));
+export async function getCandidateUniverse(allowed?: Set<string>): Promise<TokenMetrics[]> {
+  // SEED metrics only — ZERO SoSoValue calls. Candidate scoring uses
+  // momentum30d / sentiment / volatility / liquidityScore, all curated seed
+  // fields. Fetching them live cost ~1-2 SoSoValue calls PER TOKEN per build
+  // (31+ tokens) — impossible under the Demo plan (10k/month · 10/min); a
+  // single build blew the per-minute limit and ~0.5% of the month. Live
+  // prices for the visible tiles come from SoDEX (free); execution prices
+  // from the SoDEX orderbook. `allowed` restricts to tradable markets so the
+  // agent never proposes an unlisted leg (e.g. MKR on mainnet).
+  let symbols = Object.keys(MOCK_TOKENS);
+  if (allowed && allowed.size > 0) {
+    symbols = symbols.filter((s) => allowed.has(s.toUpperCase()));
+  }
+  return symbols
+    .map((s) => mockMetricsFor(s))
+    .filter((x): x is TokenMetrics => Boolean(x));
 }
 
 // ---------------------------------------------------------------------------
