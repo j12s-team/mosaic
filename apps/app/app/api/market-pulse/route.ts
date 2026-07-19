@@ -70,16 +70,31 @@ export async function GET() {
       changePct: idx.changePct ?? 0,
     }));
 
-  // Honest sourcing: only claim "live" when at least one price actually came
-  // from SoSoValue (vs the curated seed table).
+  // Honest sourcing. Prices come via SoSoValue market-snapshot; news/SSI via
+  // other endpoints. Report each independently so a single failing endpoint
+  // isn't mislabeled as "all demo", and expose WHY when not live.
+  // "live" tracks the one reliable per-item signal: did a price actually come
+  // from SoSoValue (source==="sosovalue") vs the curated seed table. When not
+  // live, `reason` says WHY so the cause is visible in-app, not a silent pill.
   const live = tickers.some((t) => t.source === "sosovalue");
+  const hasKey = Boolean(process.env.SOSOVALUE_API_KEY);
+  const forcedMocks = process.env.MOSAIC_USE_MOCKS === "true";
+  const reason = !hasKey
+    ? "SOSOVALUE_API_KEY is not set in this environment"
+    : forcedMocks
+      ? "MOSAIC_USE_MOCKS=true is forcing the mock layer"
+      : !live
+        ? "SoSoValue returned no live prices — check server logs (MOSAIC_DEBUG_SODEX=1)"
+        : null;
 
   return NextResponse.json({
     tickers,
     ssiMovers,
     news: news.slice(0, 5),
     live,
-    priceSource: live ? "SoSoValue market snapshots" : "curated demo data",
+    reason,
+    sosoConfigured: hasKey && !forcedMocks,
+    priceSource: live ? "SoSoValue market snapshots" : "curated seed prices",
     fetchedAt: new Date().toISOString(),
   });
 }

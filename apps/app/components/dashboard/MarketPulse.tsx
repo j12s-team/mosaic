@@ -28,7 +28,7 @@ interface SsiMover {
  * Auto-refreshes every 60s.
  */
 export function MarketPulse() {
-  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[]; ssiMovers?: SsiMover[]; live?: boolean } | null>(null);
+  const [data, setData] = useState<{ tickers: Ticker[]; news: NewsItem[]; ssiMovers?: SsiMover[]; live?: boolean; reason?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,7 +64,10 @@ export function MarketPulse() {
           {data?.live ? (
             <LivePulse label="streaming" className="ml-auto" />
           ) : (
-            <span className="ml-auto rounded-full border border-outline px-2 py-0.5 text-[10px] text-on-surface-variant">
+            <span
+              className="ml-auto rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] text-on-warning-container"
+              title={data?.reason ?? "Showing curated demo data — no live SoSoValue feed."}
+            >
               demo data
             </span>
           )}
