@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAllTickers, getWalletBalances, currentNetwork, checkApiKeyRegistered } from "@mosaic/core/sodex";
 import { getFeaturedNews, listSsiIndexes, getTokenMetrics } from "@mosaic/core/sosovalue";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/diag?address=0x...
  *

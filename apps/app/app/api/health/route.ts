@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { currentNetwork, pingPublic } from "@mosaic/core/sodex";
 
+// Live data — never serve a build-time snapshot (fix: app showed demo/mock
+// while the site showed live). Re-runs per request with the current env.
+export const dynamic = "force-dynamic";
+
 /**
  * Health probe — pings SoDEX's public market list endpoint and reports
  * what credentials are configured. The dashboard uses this to render a
