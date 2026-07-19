@@ -155,6 +155,26 @@ interface RawSpotSymbol {
   status?: string;
 }
 
+/**
+ * Base symbols with a LIVE SoDEX market on the current network, derived from
+ * the cached tickers (one free call — no SoSoValue quota). Used to keep the
+ * agent from proposing unlisted markets (e.g. MKR on mainnet). Returns an
+ * empty set on failure or in mock mode so callers stay permissive.
+ */
+export async function listedBaseSymbols(): Promise<Set<string>> {
+  if (useMocks()) return new Set();
+  try {
+    const rows = await getAllTickers();
+    return new Set(
+      rows
+        .filter((r) => r.lastPrice > 0 && (r.quote ?? "USDC").toUpperCase() === "USDC")
+        .map((r) => r.base.toUpperCase()),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
 export async function listMarkets(): Promise<Market[]> {
   if (useMocks()) {
     return Object.keys(MOCK_TOKENS).map((b) => ({
