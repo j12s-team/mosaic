@@ -317,7 +317,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
               <div className="space-y-2 text-sm">
                 <p className="font-medium">
                   This will place {plan.legs.length} live orders on SoDEX (
-                  {process.env.NEXT_PUBLIC_NETWORK ?? "testnet"}).
+                  {process.env.NEXT_PUBLIC_MOSAIC_NETWORK ?? "testnet"}).
                 </p>
                 <p className="text-xs text-on-surface-variant">
                   Total notional <span className="font-mono">{formatUSD(plan.totalNotionalUsd)}</span>{" "}
@@ -363,7 +363,7 @@ export function ExecutionPreview({ plan, basket, onExecuted }: Props) {
                 <p className="font-medium">
                   {execMode === "demo" ? "Demo run complete" : "Basket executed"} ·{" "}
                   {plan.legs.length} legs routed to SoDEX{" "}
-                  {process.env.NEXT_PUBLIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}.
+                  {process.env.NEXT_PUBLIC_MOSAIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}.
                 </p>
                 <p className="text-xs text-on-surface-variant">
                   Mosaic recorded the {formatUSD(plan.totalNotionalUsd)} entry locally and is now
