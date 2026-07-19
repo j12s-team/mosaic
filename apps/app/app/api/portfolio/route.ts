@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { MOCK_PORTFOLIO, MOCK_PROPOSAL } from "@mosaic/core/mock";
 import { getPortfolioPositions } from "@mosaic/core/sodex";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Portfolio API.
  *

@@ -21,16 +21,29 @@ Variables, scope *Production*), entered via the dashboard or the Vercel CLI.
 
 ## Two Vercel projects (from the Phase 2 split)
 
-Create two projects from the `wave3/dapp` branch:
+### ⚠️ #1 cause of build failure: Root Directory
 
-| Project | Root Directory | Domain |
+This is a monorepo with **two** Next.js apps under `apps/`. There is **no
+Next.js app at the repo root**. If a Vercel project's **Root Directory is the
+repo root**, the build runs `turbo run build` (both apps) and Vercel can't
+find a single app output → the build fails after install. The tell in the
+log is `Scope: all 5 workspace projects` during install.
+
+**Fix:** create TWO separate Vercel projects, each pointing at one app:
+
+| Project | Root Directory (Settings → General) | Domain |
 |---|---|---|
 | mosaic-app | `apps/app` | app.mosaic.xyz |
 | mosaic-site | `apps/site` | mosaic.xyz |
 
-Both need Build Command `pnpm build` and Install `pnpm install` (Vercel
-detects Turborepo). The app project picks up `apps/app/vercel.json` (the
-daily snapshot cron) automatically.
+With Root Directory set to the app subfolder, Vercel walks up to the
+workspace root for `pnpm install`, then runs `next build` in that one app and
+finds its `.next` output. Leave Build/Install commands on their defaults
+(Vercel auto-detects Next.js + Turborepo). The app project picks up
+`apps/app/vercel.json` (the daily snapshot cron) automatically.
+
+Do NOT deploy from the repo root, and do NOT add a root `vercel.json` to force
+it — Root Directory per app is the supported path.
 
 ## Setting production env vars
 

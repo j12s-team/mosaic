@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getFeaturedNews, getLivePrices, listSsiIndexes } from "@mosaic/core/sosovalue";
 
+// Live data — never serve a build-time snapshot (fix: app showed demo/mock
+// while the site showed live). Re-runs per request with the current env.
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/market-pulse
  *
