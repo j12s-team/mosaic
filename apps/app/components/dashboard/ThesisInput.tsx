@@ -231,7 +231,7 @@ export function ThesisInput({ onSubmit, loading }: Props) {
               SoSoValue API
             </Badge>
             <Badge variant="outline" className="text-[10px]">
-              SoDEX testnet
+              SoDEX {process.env.NEXT_PUBLIC_MOSAIC_NETWORK === "mainnet" ? "mainnet" : "testnet"}
             </Badge>
             <Badge variant="brand" className="text-[10px]">
               Agentic

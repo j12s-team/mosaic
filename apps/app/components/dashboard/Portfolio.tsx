@@ -103,6 +103,8 @@ export function Portfolio() {
 
   const proposals = data.pendingProposals.filter((p) => !resolved[p.id]);
   const isLive = data.source === "live";
+  const network =
+    process.env.NEXT_PUBLIC_MOSAIC_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
   return (
     <div className="space-y-4">
@@ -113,14 +115,14 @@ export function Portfolio() {
               <Wallet className="h-4 w-4 text-primary" />
               {isLive ? "Your SoDEX wallet" : "Live portfolio"}
               <Badge variant={isLive ? "success" : "outline"} className="text-[10px]">
-                {isLive ? "live · testnet" : "demo · mocks"}
+                {isLive ? `live · ${network}` : "demo · mocks"}
               </Badge>
               <InfoHint
                 label="live vs demo"
                 text={
                   isLive
-                    ? "Live: balances are read straight from your connected SoDEX testnet account and priced from /markets/tickers."
-                    : "Demo: no wallet connected, so this shows a deterministic mock portfolio. Connect a wallet to see real SoDEX testnet balances."
+                    ? `Live: balances are read straight from your connected SoDEX ${network} account and priced from /markets/tickers.`
+                    : `Demo: no wallet connected, so this shows a deterministic mock portfolio. Connect a wallet to see real SoDEX ${network} balances.`
                 }
               />
             </CardTitle>
@@ -187,16 +189,23 @@ export function Portfolio() {
 
           {data.positions.length === 0 ? (
             <div className="rounded-md border border-warning/30 bg-warning/[0.04] p-4 text-xs text-warning">
-              No balances detected on this SoDEX account. Visit the{" "}
-              <a
-                className="underline underline-offset-4"
-                href="https://testnet.sodex.com/faucet"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                testnet faucet
-              </a>{" "}
-              to claim USDC, then refresh.
+              No balances detected on this SoDEX {network} account.{" "}
+              {network === "testnet" ? (
+                <>
+                  Visit the{" "}
+                  <a
+                    className="underline underline-offset-4"
+                    href="https://testnet.sodex.com/faucet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    testnet faucet
+                  </a>{" "}
+                  to claim USDC, then refresh.
+                </>
+              ) : (
+                <>Deposit USDC to your SoDEX Spot account, then refresh.</>
+              )}
             </div>
           ) : (
             <div className="overflow-hidden rounded-md border border-outline-variant">
