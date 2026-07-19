@@ -1,46 +1,17 @@
 {
   "name": "mosaic",
-  "version": "0.1.0",
   "private": true,
-  "description": "An agentic, on-chain index manager. Built for the SoSoValue Buildathon.",
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=20" },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "typecheck:libs": "tsc -p tsc-libs.json",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "@noble/curves": "^2.2.0",
-    "@noble/hashes": "^2.2.0",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.1",
-    "framer-motion": "^11.11.17",
-    "lucide-react": "^0.454.0",
-    "next": "^15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "recharts": "^2.13.3",
-    "tailwind-merge": "^2.5.4",
-    "zod": "^3.23.8"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "start": "turbo run start"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^9.14.0",
-    "eslint-config-next": "^15.1.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.14",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.9"
-  },
-  "engines": {
-    "node": ">=20"
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3"
   }
 }

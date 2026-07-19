@@ -1,0 +1,73 @@
+"use client";
+
+import { assetColor, onAssetColor, seriesColors, useChartColors } from "@mosaic/ui/chartColors";
+import type { Basket } from "@mosaic/core/types";
+
+/**
+ * The logo, structurally: every position is a tile, area ~ weight, the
+ * tessellation is the basket. Chart-palette colors (the sanctioned literal-
+ * color layer), tile-in stagger on mount, rebalance-pulse when flagged.
+ */
+export function MosaicTiles({
+  basket,
+  pulseSymbols = [],
+  compact = false,
+}: {
+  basket: Basket;
+  pulseSymbols?: string[];
+  /** Slim strip for list rows: shorter tiles, symbols only, no caption. */
+  compact?: boolean;
+}) {
+  const colors = useChartColors();
+  const palette = seriesColors(colors);
+  const total = basket.constituents.reduce((s, c) => s + c.weight, 0) || 1;
+
+  return (
+    <div>
+      <div
+        className={`flex w-full gap-1 ${compact ? "h-9" : "h-28 sm:h-32"}`}
+        role="img"
+        aria-label="Basket weight mosaic"
+      >
+        {basket.constituents.map((c, i) => {
+          const fill = assetColor(c.symbol, palette);
+          const label = onAssetColor(fill);
+          return (
+            <div
+              key={c.symbol}
+              className={`tile-in flex min-w-0 flex-col justify-end rounded-md p-1.5 ${
+                pulseSymbols.includes(c.symbol) ? "rebalance-pulse" : ""
+              }`}
+              style={
+                {
+                  flexGrow: Math.max(c.weight / total, 0.04),
+                  flexBasis: 0,
+                  background: fill,
+                  "--tile-i": i,
+                } as React.CSSProperties
+              }
+              title={`${c.symbol} ${(c.weight * 100).toFixed(1)}%`}
+            >
+              <span
+                className="truncate text-[11px] font-semibold leading-tight"
+                style={{ color: label }}
+              >
+                {c.symbol}
+              </span>
+              {!compact && (
+                <span className="text-[9px] font-medium tabular-nums" style={{ color: label, opacity: 0.8 }}>
+                  {(c.weight * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {!compact && (
+        <p className="mt-1.5 brand-label">
+          each tile is a position — the mosaic is your basket
+        </p>
+      )}
+    </div>
+  );
+}

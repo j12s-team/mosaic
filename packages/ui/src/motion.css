@@ -1,0 +1,117 @@
+/* Mosaic interaction layer — MD3 motion (Layer 2). DESIGN.md tile semantics
+   translated to product chrome: tiles settle into a tessellation; a tile
+   with a pending rebalance proposal "wants to move". Compositor-only
+   (transform/opacity; box-shadow only on the low-frequency pulse). */
+
+:root {
+  --motion-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --motion-standard: cubic-bezier(0.2, 0, 0, 1);
+  --tile-step: 35ms;
+}
+
+/* --- Tessellation entrance ------------------------------------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  .tile-in {
+    animation: tileIn 350ms var(--motion-emphasized-decelerate) both;
+  }
+  /* Stagger via --tile-i (set inline per item). Delay caps at 12 steps so
+     long lists never feel throttled. */
+  .tile-stagger > .tile-in,
+  .tile-in[style*="--tile-i"] {
+    animation-delay: calc(min(var(--tile-i, 0), 12) * var(--tile-step));
+  }
+
+  .rebalance-pulse {
+    animation: rebalancePulse 4s var(--motion-standard) infinite;
+  }
+
+  .mosaic-shimmer::after {
+    animation: mosaicSheen 1.8s linear infinite;
+  }
+}
+
+@keyframes tileIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* The brand "glitch tile", spoken in MD3: a 4s breath — 1px offset plus a
+   tertiary outline glow. Semantic only: pending rebalance proposals. */
+@keyframes rebalancePulse {
+  0%, 78%, 100% {
+    transform: translateX(0);
+    box-shadow: 0 0 0 0 rgb(var(--md-sys-color-tertiary) / 0);
+  }
+  82% {
+    transform: translateX(-1px);
+    box-shadow: 0 0 0 3px rgb(var(--md-sys-color-tertiary) / 0.18);
+  }
+  86% {
+    transform: translateX(1px);
+    box-shadow: 0 0 0 3px rgb(var(--md-sys-color-tertiary) / 0.28);
+  }
+  92% {
+    transform: translateX(0);
+    box-shadow: 0 0 0 2px rgb(var(--md-sys-color-tertiary) / 0.12);
+  }
+}
+
+/* --- Mosaic loading shimmer ------------------------------------------------ */
+/* Tile grid built from the container's own tones; sheen sweeps via
+   transform (not background-position) to stay off the main thread. */
+.mosaic-shimmer {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(rgb(var(--md-sys-color-surface-container-highest)) 0 0);
+  background-color: rgb(var(--md-sys-color-surface-container-high));
+  -webkit-mask-image: linear-gradient(#000 0 0);
+}
+.mosaic-shimmer.mosaic-shimmer-tiles {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgb(var(--md-sys-color-surface-container-highest)) 0 22px,
+      rgb(var(--md-sys-color-surface-container-high)) 22px 26px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgb(var(--md-sys-color-surface-container-highest)) 0 22px,
+      rgb(var(--md-sys-color-surface-container-high)) 22px 26px
+    );
+  background-blend-mode: multiply;
+}
+.mosaic-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--md-sys-color-on-surface) / 0.06),
+    transparent
+  );
+}
+@keyframes mosaicSheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* --- Press micro-interaction ----------------------------------------------- */
+.press-tile {
+  transition: transform 120ms var(--motion-standard);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .press-tile:active {
+    transform: scale(0.98);
+  }
+}

@@ -1,13 +1,16 @@
 node_modules
 .next
-.env.local
-.env*.local
+# Env files — never commit real values (repo is public). Templates only.
+.env
+.env.*
+!.env.example
+!.env*.example
 .DS_Store
 *.log
 .vercel
 .turbo
 *.tsbuildinfo
-DESIGN.md
+.system
 .claude
 .codex
 .agent
@@ -15,7 +18,7 @@ DESIGN.md
 
 _to_delete/
 
-# Strategy docs — local only, never committed while the repo is public
-BUSINESS_MODEL.md
-AUDIT.md
-PLAN.md
+# Serwist build artifacts (apps/app)
+apps/app/public/sw.js
+apps/app/public/sw.js.map
+apps/app/public/swe-worker*.js
