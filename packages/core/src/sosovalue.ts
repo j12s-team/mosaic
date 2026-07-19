@@ -141,12 +141,15 @@ const memCache = new Map<string, { at: number; data: unknown }>();
 let cooldownUntil = 0;
 
 function ttlFor(path: string): number {
+  // Longer TTLs to conserve the SoSoValue monthly quota — the movers tile
+  // fires ~18 per-symbol market-snapshot calls, so short windows exhaust the
+  // plan fast. Prices/indices for a 24h tile don't need minute-fresh data.
   if (path.includes("/currencies") && !path.includes("market-snapshot") && !path.includes("klines")) {
-    return 60 * 60_000; // symbol list: 1h
+    return 6 * 60 * 60_000; // symbol list: 6h (rarely changes)
   }
-  if (path.includes("klines")) return 30 * 60_000; // momentum inputs: 30m
-  if (path.includes("/news")) return 10 * 60_000; // headlines: 10m
-  return 5 * 60_000; // snapshots / indices: 5m
+  if (path.includes("klines")) return 60 * 60_000; // momentum inputs: 1h
+  if (path.includes("/news")) return 30 * 60_000; // headlines: 30m
+  return 15 * 60_000; // snapshots / indices: 15m
 }
 
 /** Run `fn` over items with at most `limit` in flight. */
