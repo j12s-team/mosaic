@@ -272,8 +272,6 @@ Mosaic sits on SoSoValue data + SoDEX execution — deepen both, then extend.
 
 - **Repo** — https://github.com/j12s-team/mosaic
 - **Live demo** — https://mosaic-ivory.vercel.app
-- **Judge's guide** — https://mosaic-ivory.vercel.app/judges
-- **Live integration status** — https://mosaic-ivory.vercel.app/diag
 - **Video** — https://youtu.be/UGpdBQuPziA.
 - **Team** — j12s team.
 - **Wave changelog** — see top of repo.
