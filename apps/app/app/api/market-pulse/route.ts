@@ -59,8 +59,8 @@ export async function GET() {
     ? forcedMocks
       ? "MOSAIC_USE_MOCKS=true is forcing the mock layer"
       : "No live SoDEX markets or SoSoValue indices returned"
-    : network === "testnet"
-      ? "SoDEX testnet prices are synthetic"
+    : network === "mainnet"
+      ? "SoDEX mainnet prices are synthetic"
       : !hasKey
         ? "SSI/news show demo data — SOSOVALUE_API_KEY not set"
         : null;

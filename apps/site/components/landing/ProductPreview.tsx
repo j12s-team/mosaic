@@ -308,7 +308,7 @@ export function ProductPreview() {
                   className="mt-3 flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Executed on SoDEX testnet · 5 fills · 41 bps slippage
+                  Executed on SoDEX mainnet · 5 fills · 41 bps slippage
                 </motion.div>
               </Frame>
             </motion.div>
