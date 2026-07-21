@@ -12,7 +12,7 @@ export function CTA() {
           className="absolute inset-x-0 top-0 h-px"
           style={{ background: "var(--spectrum)" }}
         />
-        <p className="brand-eyebrow">zero setup · testnet by default</p>
+        <p className="brand-eyebrow">zero setup · mainnet by default</p>
         <h2 className="brand-wordmark mt-5 text-2xl leading-snug sm:text-4xl">
           DON&apos;T CHASE THE NARRATIVE.
           <br />

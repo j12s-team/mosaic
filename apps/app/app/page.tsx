@@ -386,7 +386,7 @@ export default function AppPage() {
                     Mode
                   </div>
                   <p className="text-sm leading-relaxed">
-                    Demo mode runs against testnet + mock fallbacks — nothing to configure. Set
+                    Demo mode runs against mainnet + mock fallbacks — nothing to configure. Set
                     <span className="mx-1 rounded bg-surface-container px-1 py-0.5 font-mono text-xs">
                       SOSOVALUE_API_KEY
                     </span>

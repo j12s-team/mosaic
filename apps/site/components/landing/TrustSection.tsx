@@ -16,7 +16,7 @@ const PANELS = [
   },
   {
     title: "Safety rails by default",
-    body: "Testnet by default. Mainnet requires deliberate flags, starts in dry-run, and sits behind a global notional cap and an emergency kill switch.",
+    body: "mainnet by default. Mainnet requires deliberate flags, starts in dry-run, and sits behind a global notional cap and an emergency kill switch.",
     tag: "shipped",
   },
 ];

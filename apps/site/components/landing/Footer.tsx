@@ -8,7 +8,7 @@ export function Footer() {
           <span className="brand-eyebrow">© 2026 Mosaic — all rights reserved</span>
         </div>
         <div className="flex items-center gap-6">
-          <span className="brand-eyebrow">sodex testnet</span>
+          <span className="brand-eyebrow">sodex mainnet</span>
           <a
             href="https://github.com/j12s-team/mosaic"
             target="_blank"
